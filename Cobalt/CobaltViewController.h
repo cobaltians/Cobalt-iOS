@@ -110,6 +110,7 @@
 
 // ALERT
 #define JSControlAlert                      @"alert"
+#define kJSAlertId                          @"alertId"
 #define kJSAlertTitle                       @"title"
 #define kJSAlertMessage                     @"message"
 #define kJSAlertButtons                     @"buttons"

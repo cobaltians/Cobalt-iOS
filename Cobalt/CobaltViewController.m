@@ -1895,21 +1895,25 @@ forBarButtonItemNamed:(NSString *)name {
 
 - (void)showAlert:(NSDictionary *)dict {
     NSDictionary *data = [dict objectForKey:kJSData];
-    NSString *callback = [dict objectForKey:kJSCallback];
     
     CobaltAlert *alert = [[CobaltAlert alloc] initWithData:data
-                                                  callback:callback
                                                andDelegate:self
                                         fromViewController:self];
-    [_currentAlerts addObject:alert];
-    [alert show];
+    if (alert != nil)
+    {
+        [_currentAlerts addObject:alert];
+        [alert show];
+    }
 }
 
 - (void)alert:(CobaltAlert *)alert
- withCallback:(NSString *)callback
-clickedButtonAtIndex:(NSInteger)index {
-    [self sendCallback:callback
-              withData:@{kJSAlertButtonIndex: [NSNumber numberWithInteger:index]}];
+withIdentifier:(NSNumber *)identifier
+clickedButtonAtIndex:(NSNumber *)index {
+    NSDictionary *message = @{kJSType: JSTypeUI,
+                              kJSControl: JSControlAlert,
+                              kJSData: @{kJSAlertId: identifier,
+                                         kJSAlertButtonIndex: index}};
+    [self sendMessage:message];
     
     [_currentAlerts removeObject:alert];
 }

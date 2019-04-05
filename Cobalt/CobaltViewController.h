@@ -76,22 +76,22 @@
 #define kJSActionNavigationReplace          @"replace"
 #define kJSNavigationController             @"controller"
 #define kJSBars                             @"bars"
-#define JSEventOnBackButtonPressed          @"onBackButtonPressed"
+#define JSEventOnBackButtonPressed          @"cobalt:onBackButtonPressed"
 
 #define kJSAnimated                         @"animated"
 #define kJSClearHistory                     @"clearHistory"
 
 //LIFE CYCLE
-#define JSEventOnAppStarted                 @"onAppStarted"
-#define JSEventOnAppForeground              @"onAppForeground"
-#define JSEventOnAppBackground              @"onAppBackground"
-#define JSEventOnPageShown                  @"onPageShown"
+#define JSEventOnAppStarted                 @"cobalt:onAppStarted"
+#define JSEventOnAppForeground              @"cobalt:onAppForeground"
+#define JSEventOnAppBackground              @"cobalt:onAppBackground"
+#define JSEventOnPageShown                  @"cobalt:onPageShown"
 
 // PULL TO REFRESH
-#define JSEventPullToRefresh                @"pullToRefresh"
+#define JSEventPullToRefresh                @"cobalt:onPullToRefresh"
 
 // INFINITE SCROLL
-#define JSEventInfiniteScroll               @"infiniteScroll"
+#define JSEventInfiniteScroll               @"cobalt:onInfiniteScroll"
 
 // UI
 #define JSTypeUI                            @"ui"

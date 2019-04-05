@@ -1021,22 +1021,6 @@ forBarButtonItemNamed:(NSString *)name {
             
             if (callback
                 && [callback isKindOfClass:[NSString class]]) {
-                if ([callback isEqualToString:JSEventCallbackOnBackButtonPressed]) {
-                    [self popViewController];
-                    
-                    messageHandled = YES;
-                }
-                else if ([callback isEqualToString:JSCallbackPullToRefreshDidRefresh]) {
-                    [self onPullToRefreshDidRefresh];
-                    
-                    messageHandled = YES;
-                }
-                else if ([callback isEqualToString:JSCallbackInfiniteScrollDidRefresh]) {
-                    [self onInfiniteScrollDidRefresh];
-                    
-                    messageHandled = YES;
-                }
-                else {
                     if (_delegate != nil
                         && [_delegate respondsToSelector:@selector(onUnhandledCallback:withData:fromWebView:)]) {
                         dispatch_async(dispatch_get_main_queue(), ^{
@@ -1051,7 +1035,6 @@ forBarButtonItemNamed:(NSString *)name {
                     }
 #endif
                     messageHandled = YES;
-                }
             }
 #if DEBUG_COBALT
             else {
@@ -1274,6 +1257,37 @@ forBarButtonItemNamed:(NSString *)name {
                                 [self customizeRefreshControlWithAttributedRefreshText:[[NSAttributedString alloc] initWithString:pullToRefreshText]
                                                               andAttributedRefreshText:[[NSAttributedString alloc] initWithString:refreshingText]
                                                                           andTintColor:self.refreshControl.tintColor];
+                                
+                                messageHandled = YES;
+                            }
+                            else if ([action isEqualToString:JSActionDismiss]) {
+                                [self onPullToRefreshDidRefresh];
+                                
+                                messageHandled = YES;
+                            }
+                        }
+#if DEBUG_COBALT
+                        else {
+                            NSLog(@"handleDictionarySentByJavaScript: action field missing or not a string (message: %@)", [dict description]);
+                        }
+#endif
+                    }
+#if DEBUG_COBALT
+                    else {
+                        NSLog(@"handleDictionarySentByJavaScript: data field missing or not an object (message: %@)", [dict description]);
+                    }
+#endif
+                }
+                
+                // INFINITE SCROLL
+                else if ([control isEqualToString:JSControlInfiniteScroll]) {
+                    if (data
+                        && [data isKindOfClass:[NSDictionary class]]) {
+                        NSString *action = [data objectForKey: kJSAction];
+                        if (action
+                            && [action isKindOfClass: [NSString class]]) {
+                            if ([action isEqualToString:JSActionDismiss]) {
+                                [self onInfiniteScrollDidRefresh];
                                 
                                 messageHandled = YES;
                             }
@@ -1868,9 +1882,9 @@ forBarButtonItemNamed:(NSString *)name {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)onBackButtonPressed {
-    [self sendEvent:JSEventCallbackOnBackButtonPressed
+    [self sendEvent:JSEventOnBackButtonPressed
            withData:nil
-        andCallback:JSEventCallbackOnBackButtonPressed];
+        andCallback:nil];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

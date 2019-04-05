@@ -76,7 +76,7 @@
 #define kJSActionNavigationReplace          @"replace"
 #define kJSNavigationController             @"controller"
 #define kJSBars                             @"bars"
-#define JSEventCallbackOnBackButtonPressed  @"onBackButtonPressed"
+#define JSEventOnBackButtonPressed          @"onBackButtonPressed"
 
 #define kJSAnimated                         @"animated"
 #define kJSClearHistory                     @"clearHistory"
@@ -89,11 +89,9 @@
 
 // PULL TO REFRESH
 #define JSEventPullToRefresh                @"pullToRefresh"
-#define JSCallbackPullToRefreshDidRefresh   @"pullToRefreshDidRefresh"
 
 // INFINITE SCROLL
 #define JSEventInfiniteScroll               @"infiniteScroll"
-#define JSCallbackInfiniteScrollDidRefresh  @"infiniteScrollDidRefresh"
 
 // UI
 #define JSTypeUI                            @"ui"
@@ -104,6 +102,8 @@
 
 // PULL TO REFRESH
 #define JSControlPullToRefresh              @"pullToRefresh"
+#define JSControlInfiniteScroll             @"infiniteScroll"
+#define JSActionDismiss                     @"dismiss"
 #define JSActionSetTexts                    @"setTexts"
 #define kJSTextsPullToRefresh               @"pullToRefresh"
 #define kJSTextsRefreshing                  @"refreshing"

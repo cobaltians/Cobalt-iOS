@@ -55,7 +55,7 @@
  @abstract		this method sends a JSON to the webView to execute a script (allows interactions from the native to the webView)
  @param         webViewType: the webview where the script is due to be executed
  @param         dict: a NSDictionary that contains the necessary informations to execute the script
- @discussion    the webView MUST have a function "nativeBridge.execute(%@);" that receives the JSON (representing dict) as parameter
+ @discussion    the webView MUST have a function "cobalt.private.execute(%@);" that receives the JSON (representing dict) as parameter
  @discussion    This method should NOT be overridden in subclasses.
  */
 - (void)executeScriptInWebView:(WebViewType)webViewType withDictionary:(NSDictionary *)dict;
@@ -889,7 +889,7 @@ forBarButtonItemNamed:(NSString *)name {
                 // Ensures there is no raw newLine in message.
                 message = [[message componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@""];
                 
-                NSString * script = [NSString stringWithFormat:@"cobalt.execute(%@);", message];
+                NSString * script = [NSString stringWithFormat:@"cobalt.private.execute(%@);", message];
                 
                 UIWebView * webViewToExecute;
                 switch(webViewType) {

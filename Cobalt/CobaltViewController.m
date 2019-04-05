@@ -2142,7 +2142,7 @@ didFailLoadWithError:(NSError *)error {
 - (void)refreshWebView {
     [self sendEvent:JSEventPullToRefresh
            withData:nil
-        andCallback:JSCallbackPullToRefreshDidRefresh];
+        andCallback:nil];
 }
 
 
@@ -2192,7 +2192,9 @@ didFailLoadWithError:(NSError *)error {
 
 - (void)loadMoreContentInWebview
 {
-    [self sendEvent:JSEventInfiniteScroll withData:nil andCallback:JSCallbackInfiniteScrollDidRefresh];
+    [self sendEvent:JSEventInfiniteScroll
+           withData:nil
+        andCallback:nil];
 }
 
 - (void)onInfiniteScrollDidRefresh

@@ -31,7 +31,7 @@
 
 #import "Cobalt.h"
 #import "CobaltPluginManager.h"
-
+#import "PubSub.h"
 #import "iToast.h"
 
 @interface CobaltViewController () {
@@ -1089,6 +1089,53 @@ forBarButtonItemNamed:(NSString *)name {
 #if DEBUG_COBALT
             else {
                 NSLog(@"handleDictionarySentByJavaScript: event field missing or not a string (message: %@)", [dict description]);
+            }
+#endif
+        }
+        
+        // PUBSUB
+        else if ([type isEqualToString:JSTypePubsub]) {
+            NSString *action = [dict objectForKey:kJSAction];
+            if (action != nil
+                && [action isKindOfClass:[NSString class]]) {
+                NSString *channel = [dict objectForKey:kJSChannel];
+                NSDictionary *message = [dict objectForKey:kJSMessage];
+                
+                if (channel != nil
+                    && [channel isKindOfClass:[NSString class]]) {
+                    if ([action isEqualToString:JSActionSubscribe]) {
+                        [[PubSub sharedInstance] subscribeWebView:webViewType
+                                                        toChannel:channel
+                                               fromViewController:self];
+                    }
+                    else if ([action isEqualToString:JSActionUnsubscribe]) {
+                        [[PubSub sharedInstance] unsubscribeWebView:webViewType
+                                                        fromChannel:channel
+                                                  andViewController:self];
+                    }
+                    else if ([action isEqualToString:JSActionPublish]) {
+                        if (message != nil
+                            && [message isKindOfClass:[NSDictionary class]])
+                        {
+                            [[PubSub sharedInstance] publishMessage:message
+                                                          toChannel:channel];
+                        }
+#if DEBUG_COBALT
+                        else {
+                            NSLog(@"onCobaltMessage: message field missing or not an object (message: %@)", [dict description]);
+                        }
+#endif
+                    }
+                }
+#if DEBUG_COBALT
+                else {
+                    NSLog(@"onCobaltMessage: channel field missing or not a string (message: %@)", [dict description]);
+                }
+#endif
+            }
+#if DEBUG_COBALT
+            else {
+                NSLog(@"onCobaltMessage: action field missing or not a string (message: %@)", [dict description]);
             }
 #endif
         }

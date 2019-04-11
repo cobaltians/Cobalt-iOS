@@ -64,6 +64,14 @@
 #define JSTypeEvent                         @"event"
 #define kJSEvent                            @"event"
 
+// PUBSUB
+#define JSTypePubsub                        @"pubsub"
+#define JSActionSubscribe                   @"subscribe"
+#define JSActionUnsubscribe                 @"unsubscribe"
+#define JSActionPublish                     @"publish"
+#define kJSChannel                          @"channel"
+#define kJSMessage                          @"message"
+
 // LOG
 #define JSTypeLog                           @"log"
 

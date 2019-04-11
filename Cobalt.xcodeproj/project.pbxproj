@@ -35,6 +35,9 @@
 		BE31EB441C3EC62900141B6E /* CobaltViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB381C3EC62900141B6E /* CobaltViewController.m */; };
 		BE31EB451C3EC62900141B6E /* ImageManager.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB3A1C3EC62900141B6E /* ImageManager.m */; };
 		BE31EB461C3EC62900141B6E /* iToast.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB3C1C3EC62900141B6E /* iToast.m */; };
+		BEC4C67A225F2CD500CE3692 /* PubSubWebReceiver.m in Sources */ = {isa = PBXBuildFile; fileRef = BEC4C676225F2CD500CE3692 /* PubSubWebReceiver.m */; };
+		BEC4C67B225F2CD500CE3692 /* PubSub.m in Sources */ = {isa = PBXBuildFile; fileRef = BEC4C678225F2CD500CE3692 /* PubSub.m */; };
+		BEC4C67C225F2CD500CE3692 /* PubSubReceiver.m in Sources */ = {isa = PBXBuildFile; fileRef = BEC4C679225F2CD500CE3692 /* PubSubReceiver.m */; };
 		BECF92211D53401400D8081D /* CobaltAlert.m in Sources */ = {isa = PBXBuildFile; fileRef = BECF92201D53401400D8081D /* CobaltAlert.m */; };
 		BECF92221D536DFE00D8081D /* CobaltAlert.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BECF921F1D53401400D8081D /* CobaltAlert.h */; };
 		BED87CBD1C5A660000C4C0C1 /* Cobalt.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BE31EB1E1C3EC52100141B6E /* Cobalt.h */; };
@@ -131,6 +134,12 @@
 		BE31EB3B1C3EC62900141B6E /* iToast.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iToast.h; sourceTree = "<group>"; };
 		BE31EB3C1C3EC62900141B6E /* iToast.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = iToast.m; sourceTree = "<group>"; };
 		BE31EB511C3EC7E800141B6E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		BEC4C674225F2CD500CE3692 /* PubSubReceiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PubSubReceiver.h; sourceTree = "<group>"; };
+		BEC4C675225F2CD500CE3692 /* PubSubWebReceiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PubSubWebReceiver.h; sourceTree = "<group>"; };
+		BEC4C676225F2CD500CE3692 /* PubSubWebReceiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PubSubWebReceiver.m; sourceTree = "<group>"; };
+		BEC4C677225F2CD500CE3692 /* PubSub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PubSub.h; sourceTree = "<group>"; };
+		BEC4C678225F2CD500CE3692 /* PubSub.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PubSub.m; sourceTree = "<group>"; };
+		BEC4C679225F2CD500CE3692 /* PubSubReceiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PubSubReceiver.m; sourceTree = "<group>"; };
 		BECF921F1D53401400D8081D /* CobaltAlert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CobaltAlert.h; sourceTree = "<group>"; };
 		BECF92201D53401400D8081D /* CobaltAlert.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CobaltAlert.m; sourceTree = "<group>"; };
 		BEFF87FE1C3EC8340063AA18 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -193,6 +202,7 @@
 				BE31EB4A1C3EC67800141B6E /* Font */,
 				BE31EB4C1C3EC6AC00141B6E /* Model */,
 				BE31EB491C3EC66600141B6E /* Plugin */,
+				BEC4C673225F2CBC00CE3692 /* Pubsub */,
 				BE31EB4B1C3EC68C00141B6E /* Views */,
 				BE31EB481C3EC63E00141B6E /* Supporting Files */,
 			);
@@ -282,6 +292,19 @@
 				BE31EB3C1C3EC62900141B6E /* iToast.m */,
 			);
 			name = iToast;
+			sourceTree = "<group>";
+		};
+		BEC4C673225F2CBC00CE3692 /* Pubsub */ = {
+			isa = PBXGroup;
+			children = (
+				BEC4C677225F2CD500CE3692 /* PubSub.h */,
+				BEC4C678225F2CD500CE3692 /* PubSub.m */,
+				BEC4C674225F2CD500CE3692 /* PubSubReceiver.h */,
+				BEC4C679225F2CD500CE3692 /* PubSubReceiver.m */,
+				BEC4C675225F2CD500CE3692 /* PubSubWebReceiver.h */,
+				BEC4C676225F2CD500CE3692 /* PubSubWebReceiver.m */,
+			);
+			name = Pubsub;
 			sourceTree = "<group>";
 		};
 		BEFF88001C3EC86C0063AA18 /* BackBarButtonItem */ = {
@@ -435,10 +458,13 @@
 			files = (
 				BE31EB431C3EC62900141B6E /* CobaltToast.m in Sources */,
 				BECF92211D53401400D8081D /* CobaltAlert.m in Sources */,
+				BEC4C67B225F2CD500CE3692 /* PubSub.m in Sources */,
 				BE31EB3E1C3EC62900141B6E /* CobaltAbstractPlugin.m in Sources */,
 				BE31EB441C3EC62900141B6E /* CobaltViewController.m in Sources */,
+				BEC4C67A225F2CD500CE3692 /* PubSubWebReceiver.m in Sources */,
 				BE31EB421C3EC62900141B6E /* CobaltPluginManager.m in Sources */,
 				BE31EB411C3EC62900141B6E /* CobaltFontManager.m in Sources */,
+				BEC4C67C225F2CD500CE3692 /* PubSubReceiver.m in Sources */,
 				BE31EB401C3EC62900141B6E /* CobaltButton.m in Sources */,
 				BE31EB3F1C3EC62900141B6E /* CobaltBarButtonItem.m in Sources */,
 				BE31EB451C3EC62900141B6E /* ImageManager.m in Sources */,

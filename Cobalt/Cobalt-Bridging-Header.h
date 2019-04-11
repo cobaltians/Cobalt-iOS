@@ -23,5 +23,7 @@
 #import "CobaltViewController.h"
 #import "ImageManager.h"
 #import "iToast.h"
+#import "PubSub.h"
+#import "PubSubReceiver.h"
 
 #endif /* Cobalt_Bridging_Header_h */

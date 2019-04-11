@@ -11,11 +11,20 @@
 
 @class PubSubReceiver;
 
+@protocol PubSubDelegate <NSObject>
+
+@required
+
+- (void)didReceiveMessage:(nullable NSDictionary *)message
+                onChannel:(nonnull NSString *)channel;
+
+@end
+
 /**
  * A protocol to implement to be notified when a PubSubReceiver viewController is nil (deallocated or not correctly initialized)
  * or a PubSubReceiver is not subscribed to any channel any more
  */
-@protocol PubSubReceiverDelegate <NSObject>
+@protocol InternalPubSubDelegate <NSObject>
 
 @required
 
@@ -31,12 +40,7 @@
 /**
  * An object allowing an UIWebView contained in a CobaltViewController to subscribe/unsubscribe for messages sent via a channel and receive them.
  */
-@interface PubSubReceiver : NSObject {
-    /**
-     * The dictionary which keeps track of subscribed channels and their linked callback
-     */
-    NSMutableArray *channels;
-}
+@interface PubSubReceiver : NSObject
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -45,46 +49,40 @@
 ///////////////////////////////////////////////////////////////////////////
 
 /**
- * The WebView (WebView or WebLayer) to which send messages
+ * The dictionary which keeps track of subscribed channels and their linked callback
  */
-@property (nonatomic, readonly) WebViewType webView;
+@property (strong, nonatomic, nonnull) NSMutableArray *channels;
+
 /**
- * The CobaltViewController containing the UIWebView to which send messages
+ * The delegate to which send messages
  */
-@property (weak, nonatomic, readonly) CobaltViewController *viewController;
+@property (weak, nonatomic, readonly) id<PubSubDelegate> delegate;
+
 /**
  * The delegate to notify when the viewController is nil (deallocated or not correctly initialized)
  * or the PubSubReceiver is not subscribed to any channel any more
  */
-@property (weak, nonatomic) id <PubSubReceiverDelegate> delegate;
+@property (weak, nonatomic) id <InternalPubSubDelegate> internalDelegate;
 
 ///////////////////////////////////////////////////////////////////////////
 
-#pragma mark METHODS
-
-///////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////
-
-#pragma mark Init
+#pragma mark - INIT
 
 ///////////////////////////////////////////////////////////////////////////
 
 /**
- * @discussion Creates and returns a PubSubReceiver for the WebView from the specified CobaltViewController registered to the specified channel.
- * @param webView the WebView to which send messages.
- * @param viewController the CobaltViewController containing the UIWebView to which send messages.
+ * @discussion Creates and returns a PubSubReceiver for the PubSubDelegate registered to the specified channel.
+ * @param delegate the PubSubDelegate to which send messages.
  * @param channel the channel from which the messages will come from.
  * @return A new PubSubReceiver for the specified CobaltViewController registered to the specified channel.
  */
-- (instancetype)initWithWebView:(WebViewType)webView
-             fromViewController:(nonnull CobaltViewController *)viewController
-                     forChannel:(nonnull NSString *)channel
-                    andDelegate:(nonnull id <PubSubReceiverDelegate>)delegate;
+- (instancetype)initWithDelegate:(nonnull id<PubSubDelegate>)delegate
+                      forChannel:(nonnull NSString *)channel
+             andInternalDelegate:(nonnull id <InternalPubSubDelegate>)internalDelegate;
 
 ///////////////////////////////////////////////////////////////////////////
 
-#pragma mark Helpers
+#pragma mark - METHODS
 
 ///////////////////////////////////////////////////////////////////////////
 

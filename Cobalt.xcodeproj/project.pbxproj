@@ -38,6 +38,9 @@
 		BEC4C67A225F2CD500CE3692 /* PubSubWebReceiver.m in Sources */ = {isa = PBXBuildFile; fileRef = BEC4C676225F2CD500CE3692 /* PubSubWebReceiver.m */; };
 		BEC4C67B225F2CD500CE3692 /* PubSub.m in Sources */ = {isa = PBXBuildFile; fileRef = BEC4C678225F2CD500CE3692 /* PubSub.m */; };
 		BEC4C67C225F2CD500CE3692 /* PubSubReceiver.m in Sources */ = {isa = PBXBuildFile; fileRef = BEC4C679225F2CD500CE3692 /* PubSubReceiver.m */; };
+		BEC4C685225FA29100CE3692 /* PubSub.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BEC4C677225F2CD500CE3692 /* PubSub.h */; };
+		BEC4C686225FA29100CE3692 /* PubSubReceiver.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BEC4C674225F2CD500CE3692 /* PubSubReceiver.h */; };
+		BEC4C687225FA31700CE3692 /* PubSubWebReceiver.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BEC4C675225F2CD500CE3692 /* PubSubWebReceiver.h */; };
 		BECF92211D53401400D8081D /* CobaltAlert.m in Sources */ = {isa = PBXBuildFile; fileRef = BECF92201D53401400D8081D /* CobaltAlert.m */; };
 		BECF92221D536DFE00D8081D /* CobaltAlert.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BECF921F1D53401400D8081D /* CobaltAlert.h */; };
 		BED87CBD1C5A660000C4C0C1 /* Cobalt.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BE31EB1E1C3EC52100141B6E /* Cobalt.h */; };
@@ -86,6 +89,9 @@
 			dstPath = "include/$(PRODUCT_NAME)";
 			dstSubfolderSpec = 16;
 			files = (
+				BEC4C687225FA31700CE3692 /* PubSubWebReceiver.h in CopyFiles */,
+				BEC4C685225FA29100CE3692 /* PubSub.h in CopyFiles */,
+				BEC4C686225FA29100CE3692 /* PubSubReceiver.h in CopyFiles */,
 				BED87CC41C5A661F00C4C0C1 /* BackBarButtonItem.h in CopyFiles */,
 				BECF92221D536DFE00D8081D /* CobaltAlert.h in CopyFiles */,
 				710EAF3E1DAE3924008729F1 /* Cobalt-Bridging-Header.h in CopyFiles */,

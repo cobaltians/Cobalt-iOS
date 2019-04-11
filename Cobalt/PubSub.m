@@ -7,7 +7,6 @@
 //
 
 #import "PubSub.h"
-#import "PubSubWebReceiver.h"
 
 @implementation PubSub
 
@@ -42,7 +41,7 @@ static PubSub *pubSubInstance = nil;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-#pragma mark HELPERS -
+#pragma mark - METHODS
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,11 +50,13 @@ static PubSub *pubSubInstance = nil;
  * @param message the message to broadcast to PubSubReceivers via the channel.
  * @param channel the channel to which broadcast the message.
  */
-- (void)publishMessage:(NSDictionary *)message
-             toChannel:(NSString *)channel {
+- (void)publishMessage:(nullable NSDictionary *)message
+             toChannel:(nonnull NSString *)channel {
     [receivers enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        [(PubSubReceiver *)obj didReceiveMessage:message
-                                       onChannel:channel];
+        if ([((PubSubReceiver *) obj).channels indexOfObject:channel] != NSNotFound) {
+            [(PubSubReceiver *)obj didReceiveMessage:message
+                                           onChannel:channel];
+        }
     }];
 }
 
@@ -70,11 +71,12 @@ static PubSub *pubSubInstance = nil;
                toChannel:(nonnull NSString *)channel
       fromViewController:(nonnull CobaltViewController *)viewController
 {
-    __block PubSubReceiver *receiver;
+    __block PubSubWebReceiver *receiver;
     
     [receivers enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        if ([viewController isEqual:((PubSubReceiver *) obj).viewController]
-            && webView == ((PubSubReceiver *) obj).webView) {
+        if ([obj isKindOfClass:[PubSubWebReceiver class]]
+            && [viewController isEqual:((PubSubWebReceiver *) obj).viewController]
+            && webView == ((PubSubWebReceiver *) obj).webView) {
             receiver = obj;
             *stop = YES;
         }
@@ -84,10 +86,10 @@ static PubSub *pubSubInstance = nil;
         [receiver subscribeToChannel:channel];
     }
     else {
-        receiver = [[PubSubReceiver alloc] initWithWebView:webView
-                                        fromViewController:viewController
-                                                forChannel:channel
-                                               andDelegate:self];
+        receiver = [[PubSubWebReceiver alloc] initWithWebView:webView
+                                           fromViewController:viewController
+                                                   forChannel:channel
+                                          andInternalDelegate:self];
         [receivers addObject:receiver];
     }
 }
@@ -99,14 +101,15 @@ static PubSub *pubSubInstance = nil;
  * @param viewController the CobaltViewController containing the UIWebView unsubscribes from the channel.
  */
 - (void)unsubscribeWebView:(WebViewType)webView
-               fromChannel:(NSString *)channel
-         andViewController:(UIViewController *)viewController
+               fromChannel:(nonnull NSString *)channel
+         andViewController:(nonnull CobaltViewController *)viewController
 {
-    __block PubSubReceiver *receiver;
+    __block PubSubWebReceiver *receiver;
     
     [receivers enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        if ([viewController isEqual:((PubSubReceiver *) obj).viewController]
-            && webView == ((PubSubReceiver *) obj).webView) {
+        if ([obj isKindOfClass:[PubSubWebReceiver class]]
+            && [viewController isEqual:((PubSubWebReceiver *) obj).viewController]
+            && webView == ((PubSubWebReceiver *) obj).webView) {
             receiver = obj;
             *stop = YES;
         }
@@ -117,6 +120,45 @@ static PubSub *pubSubInstance = nil;
     }
 }
 
+- (void)subscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                toChannel:(nonnull NSString *)channel {
+    __block PubSubReceiver *receiver;
+    
+    [receivers enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        if ([delegate isEqual:((PubSubReceiver *) obj).delegate]) {
+            receiver = obj;
+            *stop = YES;
+        }
+    }];
+    
+    if (receiver != nil) {
+        [receiver subscribeToChannel:channel];
+    }
+    else {
+        receiver = [[PubSubReceiver alloc] initWithDelegate:delegate
+                                                 forChannel:channel
+                                        andInternalDelegate:self];
+        [receivers addObject:receiver];
+    }
+}
+
+- (void)unsubscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                fromChannel:(nonnull NSString *)channel {
+    __block PubSubReceiver *receiver;
+    
+    [receivers enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        if ([delegate isEqual:((PubSubReceiver *) obj).delegate]) {
+            receiver = obj;
+            *stop = YES;
+        }
+    }];
+    
+    if (receiver) {
+        [receiver unsubscribeFromChannel:channel];
+    }
+}
+
+/*
 - (void)subscribeBlock:(void (^)(NSDictionary* _Nonnull message))block
              toChannel:(NSString *)channel
 {
@@ -128,10 +170,11 @@ static PubSub *pubSubInstance = nil;
 {
     
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-#pragma mark PUBSUB RECEIVER DELEGATE -
+#pragma mark - INTERNAL PUBSUB DELEGATE
 
 ////////////////////////////////////////////////////////////////////////////////////////
 

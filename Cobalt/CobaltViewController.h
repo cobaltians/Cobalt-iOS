@@ -233,7 +233,7 @@ typedef NSInteger WebViewType;
     
 @private
     
-    id<CobaltDelegate> _delegate;
+    __weak id<CobaltDelegate> _delegate;
     float _lastWebviewContentOffset;
 	BOOL _isLoadingMore;
     BOOL _isRefreshing;

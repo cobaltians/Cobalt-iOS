@@ -27,7 +27,7 @@ clickedButtonAtIndex:(NSNumber *)index;
 @property (strong, nonatomic) UIAlertView *alertView;
 @property (strong, nonatomic) NSNumber *identifier;
 @property (weak, nonatomic) id<CobaltAlertDelegate> delegate;
-@property (strong, nonatomic, nonnull) UIViewController *viewController;
+@property (weak, nonatomic) UIViewController *viewController;
 
 - (instancetype)initWithData:(NSDictionary *)data
                  andDelegate:(nonnull id<CobaltAlertDelegate>)delegate

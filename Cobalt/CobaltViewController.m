@@ -106,10 +106,6 @@ NSString * webLayerPage;
     
     fromJavaScriptOperationQueue = [[NSOperationQueue alloc] init] ;
     [fromJavaScriptOperationQueue setSuspended:YES];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(onAppStarted:)
-                                                 name:kOnAppStarted object:nil];
 }
 
 - (void)initWithPage:(nonnull NSString *)page
@@ -217,12 +213,6 @@ NSString * webLayerPage;
     [self configureBars];
     [self setBarButtonItems];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(onAppBackground:)
-                                                 name:kOnAppBackgroundNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(onAppForeground:)
-                                                 name:kOnAppForegroundNotification object:nil];
     if ([[UIDevice currentDevice].systemVersion compare:@"8.0"
                                                 options:NSNumericSearch] == NSOrderedAscending) {
         [[NSNotificationCenter defaultCenter] addObserver:self
@@ -250,13 +240,6 @@ NSString * webLayerPage;
     [fromJavaScriptOperationQueue setSuspended:YES];
     
     [self resetBars];
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kOnAppBackgroundNotification
-                                                  object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kOnAppForegroundNotification
-                                                  object:nil];
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -284,9 +267,6 @@ NSString * webLayerPage;
     [self.refreshControl removeTarget:self
                                action:@selector(refresh)
                      forControlEvents:UIControlEventValueChanged];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kOnAppStarted
-                                                  object:nil];
     
     [[NSNotificationCenter defaultCenter] postNotificationName:viewControllerDeallocatedNotification
                                                         object:self];

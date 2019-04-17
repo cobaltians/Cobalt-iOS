@@ -171,4 +171,25 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
  */
 + (UIColor *)colorFromHexString:(NSString *)hexString;
 
+/*!
+ @method    + (void)onAppStarted
+ @abstract  To be called on AppDelegate's application:didFinishLaunchingWithOptions: method
+            Forward the app lifecycle event to components which subscribed to "cobalt:onAppStarted"
+ */
++ (void)onAppStarted;
+
+/*!
+ @method    + (void)onAppForeground
+ @abstract  To be called on AppDelegate's applicationWillEnterForeground: method
+            Forward the app lifecycle event to components which subscribed to "cobalt:onAppForeground"
+ */
++ (void)onAppForeground;
+
+/*!
+ @method    + (void)onAppBackground
+ @abstract  To be called on AppDelegate's applicationDidEnterBackground: method
+            Forward the app lifecycle event to components which subscribed to "cobalt:onAppBackground"
+ */
++ (void)onAppBackground;
+
 @end

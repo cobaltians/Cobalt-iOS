@@ -169,11 +169,6 @@
 #define kJSTypePlugin                       @"plugin"
 #define kJSPluginName                       @"name"
 
-//NOTIFS
-#define kOnAppStarted                       @"onAppStarted"
-#define kOnAppForegroundNotification        @"onAppForegroundNotification"
-#define kOnAppBackgroundNotification        @"onAppBackgroundNotification"
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma mark ENUM

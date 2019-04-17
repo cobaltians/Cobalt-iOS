@@ -29,6 +29,8 @@
 
 #import "Cobalt.h"
 
+#import "PubSub.h"
+
 //static NSMutableDictionary *sCobaltConfiguration;
 static NSDictionary *sCobaltConfiguration;
 static NSString *sResourcePath;
@@ -369,6 +371,30 @@ static NSString *sResourcePath;
     
     sCobaltConfiguration = [Cobalt dictionaryWithData:data];
     return (NSMutableDictionary *) CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault, (CFDictionaryRef) sCobaltConfiguration, kCFPropertyListMutableContainersAndLeaves));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark APP LIFECYCLE
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
++ (void)onAppStarted
+{
+    [[PubSub sharedInstance] publishMessage:nil
+                                  toChannel:JSEventOnAppStarted];
+}
+
++ (void)onAppForeground
+{
+    [[PubSub sharedInstance] publishMessage:nil
+                                  toChannel:JSEventOnAppForeground];
+}
+
++ (void)onAppBackground
+{
+    [[PubSub sharedInstance] publishMessage:nil
+                                  toChannel:JSEventOnAppBackground];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

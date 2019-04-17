@@ -257,7 +257,6 @@ NSString * webLayerPage;
 {
     toJavaScriptOperationQueue = nil;
     fromJavaScriptOperationQueue = nil;
-    _delegate = nil;
     webView.scrollView.delegate = nil;
     webView.delegate = nil;
     webView = nil;
@@ -841,12 +840,6 @@ forBarButtonItemNamed:(NSString *)name {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)setDelegate:(id<CobaltDelegate>)delegate {
-    if (delegate) {
-        _delegate = delegate;
-    }
-}
-
 - (void)customWebView
 {
     
@@ -999,46 +992,10 @@ forBarButtonItemNamed:(NSString *)name {
     
     if (type
         && [type isKindOfClass:[NSString class]]) {
-        
-        // CALLBACK
-        if ([type isEqualToString:JSTypeCallBack]) {
-            NSString * callback = [dict objectForKey:kJSCallback];
-            NSDictionary * data = [dict objectForKey:kJSData];
-            
-            if (callback
-                && [callback isKindOfClass:[NSString class]]) {
-                    if (_delegate != nil
-                        && [_delegate respondsToSelector:@selector(onUnhandledCallback:withData:fromWebView:)]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [_delegate onUnhandledCallback:callback
-                                                  withData:data
-                                               fromWebView:webViewType];
-                        });
-                    }
-#if DEBUG_COBALT
-                    else {
-                        NSLog(@"handleDictionarySentByJavaScript: unhandled callback %@", [dict description]);
-                    }
-#endif
-                    messageHandled = YES;
-            }
-#if DEBUG_COBALT
-            else {
-                NSLog(@"handleDictionarySentByJavaScript: callback field missing or not a string (message: %@)", [dict description]);
-            }
-#endif
-        }
-        
         // COBALT IS READY
-        else if ([type isEqualToString:JSTypeCobaltIsReady]) {
+        if ([type isEqualToString:JSTypeCobaltIsReady]) {
             [toJavaScriptOperationQueue setSuspended:NO];
             
-            if (_delegate != nil
-                && [_delegate respondsToSelector:@selector(onCobaltIsReady)]) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [_delegate onCobaltIsReady];
-                });
-            }
 #if DEBUG_COBALT
             NSString *version = [dict objectForKey:KJSVersion];
             if (! [version isEqualToString:COBALT_VERSION]) {
@@ -1046,37 +1003,6 @@ forBarButtonItemNamed:(NSString *)name {
             }
 #endif
             messageHandled = YES;
-        }
-        
-        // EVENT
-        else if ([type isEqualToString:JSTypeEvent]) {
-            NSString *event = [dict objectForKey:kJSEvent];
-            NSDictionary *data = [dict objectForKey:kJSData];
-            NSString *callback = [dict objectForKey:kJSCallback];
-            
-            if (event &&
-                [event isKindOfClass:[NSString class]]) {
-                if (_delegate != nil
-                    && [_delegate respondsToSelector:@selector(onUnhandledEvent:withData:andCallback:fromWebView:)]) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [_delegate onUnhandledEvent:event
-                                           withData:data
-                                        andCallback:callback
-                                        fromWebView:webViewType];
-                    });
-                }
-#if DEBUG_COBALT
-                else {
-                    NSLog(@"handleDictionarySentByJavaScript: unhandled event %@", [dict description]);
-                }
-#endif
-                messageHandled = YES;
-            }
-#if DEBUG_COBALT
-            else {
-                NSLog(@"handleDictionarySentByJavaScript: event field missing or not a string (message: %@)", [dict description]);
-            }
-#endif
         }
         
         // PUBSUB
@@ -1615,18 +1541,10 @@ forBarButtonItemNamed:(NSString *)name {
         }
     }
     
-    if (! messageHandled) {
-        if (_delegate != nil
-            && [_delegate respondsToSelector:@selector(onUnhandledMessage:fromWebView:)]) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [_delegate onUnhandledMessage:dict
-                                  fromWebView:webViewType];
-            });
-        }
+    if (! messageHandled)
+    {
 #if DEBUG_COBALT
-        else {
-            NSLog(@"handleDictionarySentByJavaScript: unhandled message %@", [dict description]);
-        }
+        NSLog(@"onCobaltMessage:fromWebView: message not handled %@", [dict description]);
 #endif
     }
 }

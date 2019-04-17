@@ -183,30 +183,6 @@ typedef NSInteger WebViewType;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-#pragma mark PROTOCOL
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-@protocol CobaltDelegate <NSObject>
-
-@optional
-- (void)onCobaltIsReady;
-
-@required
-- (BOOL)onUnhandledMessage:(NSDictionary *)message
-               fromWebView:(WebViewType)webView;
-- (BOOL)onUnhandledEvent:(NSString *)event
-                withData:(NSDictionary *)data
-             andCallback:(NSString *)callback
-             fromWebView:(WebViewType)webView;
-- (BOOL)onUnhandledCallback:(NSString *)callback
-                   withData:(NSDictionary *)data
-                fromWebView:(WebViewType)webView;
-
-@end
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma mark INTERFACE
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,7 +204,6 @@ typedef NSInteger WebViewType;
     
 @private
     
-    __weak id<CobaltDelegate> _delegate;
     float _lastWebviewContentOffset;
 	BOOL _isLoadingMore;
     BOOL _isRefreshing;
@@ -318,12 +293,6 @@ typedef NSInteger WebViewType;
  */
 - (void)initWithPage:(nonnull NSString *)page
        andController:(nullable NSString *)controller;
-    
-/*!
- @method		- (void)setDelegate:(id<CobaltDelegate>)delegate
- @abstract		this method sets the delegate which responds to CobaltDelegate protocol
- */
-- (void)setDelegate:(id<CobaltDelegate>)delegate;
 
 /*!
  @method		-(void) customView

@@ -59,16 +59,20 @@
         return;
     }
     
+    NSMutableDictionary *cobaltMessage = [NSMutableDictionary dictionaryWithDictionary:@{kJSType: JSTypePubsub,
+                                                                                         kJSChannel: channel}];
+    if (message != nil)
+    {
+        [cobaltMessage setObject:message
+                          forKey:kJSMessage];
+    }
+    
     switch (_webView) {
         case WEB_VIEW:
-            [_viewController sendMessage:@{kJSType: JSTypePubsub,
-                                           kJSChannel: channel,
-                                           kJSMessage: message}];
+            [_viewController sendMessage:cobaltMessage];
             break;
         case WEB_LAYER:
-            [_viewController sendMessageToWebLayer:@{kJSType: JSTypePubsub,
-                                                     kJSChannel: channel,
-                                                     kJSMessage: message}];
+            [_viewController sendMessageToWebLayer:cobaltMessage];
             break;
     }
 }

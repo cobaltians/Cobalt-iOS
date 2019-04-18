@@ -70,32 +70,38 @@ static CobaltPluginManager *cobaltPluginManagerInstance = nil;
 - (BOOL)onMessageFromWebView:(WebViewType)webView
     fromCobaltViewController:(CobaltViewController *)viewController
                      andData:(NSDictionary *)data {
-    NSString *pluginName = [data objectForKey:kJSPluginName];
     
-    if ([pluginName isKindOfClass:[NSString class]]) {
-        NSString *className = [[_pluginsDictionary objectForKey:pluginName] objectForKey:kConfigurationIOS];
-        Class class = NSClassFromString(className);
-        if(class) {
-            CobaltAbstractPlugin *plugin = [class sharedInstanceWithCobaltViewController:viewController];
-            switch (webView) {
-                case WEB_VIEW:
-                    [plugin onMessageFromCobaltController:viewController
-                                                  andData:data];
-                    break;
-                case WEB_LAYER:
-                    [plugin onMessageFromWebLayerWithCobaltController:viewController
-                                                              andData:data];
-                    break;
-            }
-            
-            return YES;
-        }
+    NSDictionary *classes = [data objectForKey:kJSPluginClasses];
+    if (!classes) {
 #if DEBUG_COBALT
-        else {
-            NSLog(@"\n***********\n%@ class not found\n***********\n", className);
-        }
+        NSLog(@"\n***********\n no plugin classes in plugin\n***********\n");
 #endif
+        return NO;
     }
+    
+    NSString *className = [classes objectForKey:kConfigurationIOS];
+    Class class = NSClassFromString(className);
+    if(class) {
+        CobaltAbstractPlugin *plugin = [class sharedInstanceWithCobaltViewController:viewController];
+        switch (webView) {
+            case WEB_VIEW:
+                [plugin onMessageFromCobaltController:viewController
+                                              andData:data];
+                break;
+            case WEB_LAYER:
+                [plugin onMessageFromWebLayerWithCobaltController:viewController
+                                                          andData:data];
+                break;
+        }
+        
+        return YES;
+    }
+#if DEBUG_COBALT
+    else {
+        NSLog(@"\n***********\n%@ class not found\n***********\n", className);
+    }
+#endif
+    
     
     return NO;
 }

@@ -168,6 +168,7 @@
 //PLUGIN
 #define kJSTypePlugin                       @"plugin"
 #define kJSPluginName                       @"name"
+#define kJSPluginClasses                       @"classes"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 

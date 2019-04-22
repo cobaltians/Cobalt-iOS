@@ -55,10 +55,13 @@
  @abstract		this method sends a JSON to the webView to execute a script (allows interactions from the native to the webView)
  @param         webViewType: the webview where the script is due to be executed
  @param         dict: a NSDictionary that contains the necessary informations to execute the script
+ @param         executeFirst: YES if you want this script to be executed in priority, NO otherwise
  @discussion    the webView MUST have a function "cobalt.private.execute(%@);" that receives the JSON (representing dict) as parameter
  @discussion    This method should NOT be overridden in subclasses.
  */
-- (void)executeScriptInWebView:(WebViewType)webViewType withDictionary:(NSDictionary *)dict;
+- (void)executeScriptInWebView:(WebViewType)webViewType
+                withDictionary:(NSDictionary *)dict
+                toExecuteFirst:(BOOL)executeFirst;
 
 @end
 
@@ -290,12 +293,12 @@ NSString * webLayerPage;
 }
 
 - (void)onAppForeground:(NSNotification *)notification {
-    [self sendEvent:JSEventOnAppForeground
-           withData:nil
-        andCallback:nil];
-    
     [self sendEvent:JSEventOnPageShown
            withData:_navigationData
+        andCallback:nil];
+    
+    [self sendEvent:JSEventOnAppForeground
+           withData:nil
         andCallback:nil];
     
     _navigationData = nil;
@@ -857,9 +860,18 @@ forBarButtonItemNamed:(NSString *)name {
     [mWebView loadRequest:requestURL];
 }
 
-- (void)executeScriptInWebView:(WebViewType)webViewType withDictionary:(NSDictionary *)dict
+- (void)executeScriptInWebView:(WebViewType)webViewType
+                withDictionary:(NSDictionary *)dict
+                toExecuteFirst:(BOOL)executeFirst
 {
-    [toJavaScriptOperationQueue addOperationWithBlock:^{
+    BOOL operationQueueWasSuspended = toJavaScriptOperationQueue.suspended;
+    
+    if (executeFirst)
+    {
+        toJavaScriptOperationQueue.suspended = YES;
+    }
+    
+    NSBlockOperation *operation =  [NSBlockOperation blockOperationWithBlock:^{
         if ([NSJSONSerialization isValidJSONObject:dict]) {
             NSError * error;
             NSString * message =[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:dict options:0 error:&error] encoding:NSUTF8StringEncoding];
@@ -889,6 +901,13 @@ forBarButtonItemNamed:(NSString *)name {
 #endif
         }
     }];
+    if (executeFirst)
+    {
+        operation.queuePriority = NSOperationQueuePriorityVeryHigh;
+    }
+    [toJavaScriptOperationQueue addOperation:operation];
+    
+    toJavaScriptOperationQueue.suspended = operationQueueWasSuspended;
 }
 
 /*!
@@ -913,7 +932,9 @@ forBarButtonItemNamed:(NSString *)name {
             [dict setObject:callback forKey:kJSCallback];
         }
         
-        [self executeScriptInWebView:WEB_VIEW withDictionary:dict];
+        [self executeScriptInWebView:WEB_VIEW
+                      withDictionary:dict
+                      toExecuteFirst:[JSEventOnPageShown isEqualToString:event]];
     }
 #if DEBUG_COBALT
     else {
@@ -936,7 +957,9 @@ forBarButtonItemNamed:(NSString *)name {
             [dict setObject:callback forKey:kJSCallback];
         }
         
-        [self executeScriptInWebView:WEB_LAYER withDictionary:dict];
+        [self executeScriptInWebView:WEB_LAYER
+                      withDictionary:dict
+                      toExecuteFirst:[JSEventOnPageShown isEqualToString:event]];
     }
 #if DEBUG_COBALT
     else {
@@ -1526,7 +1549,12 @@ forBarButtonItemNamed:(NSString *)name {
 }
 
 - (void) sendMessage:(NSDictionary *) message {
-    if (message != nil) [self executeScriptInWebView:WEB_VIEW withDictionary:message];
+    if (message != nil)
+    {
+        [self executeScriptInWebView:WEB_VIEW
+                      withDictionary:message
+                      toExecuteFirst:NO];
+    }
 #if DEBUG_COBALT
     else NSLog(@"sendMessage: message is nil!");
 #endif
@@ -1536,7 +1564,8 @@ forBarButtonItemNamed:(NSString *)name {
 - (void)sendMessageToWebLayer:(NSDictionary *)message {
     if (message != nil) {
         [self executeScriptInWebView:WEB_LAYER
-                      withDictionary:message];
+                      withDictionary:message
+                      toExecuteFirst:NO];
     }
 #if DEBUG_COBALT
     else {

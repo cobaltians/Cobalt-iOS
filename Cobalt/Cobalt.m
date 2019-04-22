@@ -399,6 +399,33 @@ static NSString *sResourcePath;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma mark PUBSUB SHORTCUTS
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
++ (void)subscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                toChannel:(nonnull NSString *)channel
+{
+    [[PubSub sharedInstance] subscribeDelegate:delegate
+                                     toChannel:channel];
+}
+
++ (void)unsubscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                fromChannel:(nonnull NSString *)channel
+{
+    [[PubSub sharedInstance] unsubscribeDelegate:delegate
+                                     fromChannel:channel];
+}
+
++ (void)publishMessage:(nullable NSDictionary *)message
+             toChannel:(nonnull NSString *)channel
+{
+    [[PubSub sharedInstance] publishMessage:message
+                                  toChannel:channel];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
 #pragma mark HELPERS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

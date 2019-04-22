@@ -31,20 +31,18 @@
 
 #import "CobaltViewController.h"
 
-#define kConfigurationPlugins   @"plugins"
-
 @interface CobaltPluginManager : NSObject
 
-@property (nonatomic, retain) NSDictionary *pluginsDictionary;
-
 /*!
- @method    + (CobaltPluginManager *)sharedInstance
- @abstract  Returns the singleton instance of the Cobalt plugin manager.
- @result    The singleton instance of the Cobalt plugin manager.
+ @method        + (BOOL)onMessage:(nonnull NSDictionary *)message
+                      fromWebView:(WebViewType)webView
+               inCobaltController:(nonnull CobaltViewController *)viewController
+ @abstract      To call when a message is sent for a plugin from a webView hosted by a viewController.
+ @result        Returns: YES if the message has been forwarded to the plugin,
+                         NO otherwise.
  */
-+ (CobaltPluginManager *)sharedInstance;
-- (BOOL)onMessageFromWebView:(WebViewType)webView
-    fromCobaltViewController:(CobaltViewController *)viewController
-                     andData:(NSDictionary *)data;
++ (BOOL)onMessage:(nonnull NSDictionary *)message
+      fromWebView:(WebViewType)webView
+inCobaltController:(nonnull CobaltViewController *)viewController;
 
 @end

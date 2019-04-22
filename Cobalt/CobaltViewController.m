@@ -891,23 +891,14 @@ forBarButtonItemNamed:(NSString *)name {
     }];
 }
 
-- (void)sendCallback:(NSString *)callback withData:(NSObject *)data
-{
-    if (callback
-        && callback.length > 0) {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:   JSTypeCallBack, kJSType,
-                                                                            callback, kJSCallback,
-                                                                            data, kJSData,
-                                                                            nil];
-        [self executeScriptInWebView:WEB_VIEW withDictionary:dict];
-    }
-#if DEBUG_COBALT
-    else {
-        NSLog(@"sendCallback: invalid callback (null or empty)");
-    }
-#endif
-}
-
+/*!
+ @method        - (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
+ @abstract      this method sends an event with a data object and an optional callback
+ @param         event: event fired
+ @param         data: data object to send to JS
+ @param         callback: the callback JS should calls when message is treated
+ @discussion    This method should NOT be overridden in subclasses.
+ */
 - (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
 {
     if (event
@@ -927,23 +918,6 @@ forBarButtonItemNamed:(NSString *)name {
 #if DEBUG_COBALT
     else {
         NSLog(@"sendEvent: invalid event (null or empty)");
-    }
-#endif
-}
-
-- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data
-{
-    if (callback
-        && callback.length > 0) {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:   JSTypeCallBack, kJSType,
-                               callback, kJSCallback,
-                               data, kJSData,
-                               nil];
-        [self executeScriptInWebView:WEB_LAYER withDictionary:dict];
-    }
-#if DEBUG_COBALT
-    else {
-        NSLog(@"sendCallbackToWebLayer: invalid callback (null or empty)");
     }
 #endif
 }
@@ -1530,11 +1504,13 @@ forBarButtonItemNamed:(NSString *)name {
 #endif
         }
         // PLUGIN
-        else if ([type isEqualToString: kJSTypePlugin]) {
+        else if ([type isEqualToString: kJSTypePlugin])
+        {
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [[CobaltPluginManager sharedInstance] onMessageFromWebView:webViewType
-                                                  fromCobaltViewController:self
-                                                                   andData:dict];
+                [CobaltPluginManager onMessage:dict
+                                   fromWebView:webViewType
+                            inCobaltController:weakSelf];
             });
             
             messageHandled = YES;

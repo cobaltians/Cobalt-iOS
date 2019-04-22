@@ -35,6 +35,8 @@
 
 #import <UIKit/UIKit.h>
 
+#import "PubSubReceiver.h"
+
 //! Project version number for Cobalt.
 FOUNDATION_EXPORT double CobaltVersionNumber;
 
@@ -191,5 +193,12 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
             Forward the app lifecycle event to components which subscribed to "cobalt:onAppBackground"
  */
 + (void)onAppBackground;
+
++ (void)subscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                toChannel:(nonnull NSString *)channel;
++ (void)unsubscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                fromChannel:(nonnull NSString *)channel;
++ (void)publishMessage:(nullable NSDictionary *)message
+             toChannel:(nonnull NSString *)channel;
 
 @end

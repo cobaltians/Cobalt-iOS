@@ -29,9 +29,9 @@
 
 #import "CobaltAbstractPlugin.h"
 
-#import <objc/runtime.h>
-
 #import "Cobalt.h"
+
+#import <objc/runtime.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -39,16 +39,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-static CobaltAbstractPlugin *cobaltPluginInstance;
+static CobaltAbstractPlugin *_instance;
 
 @implementation CobaltAbstractPlugin
 
-+ (CobaltAbstractPlugin *)sharedInstanceWithCobaltViewController: (CobaltViewController *)viewController {
-    CobaltAbstractPlugin * instance = (CobaltAbstractPlugin *)objc_getAssociatedObject(self, &cobaltPluginInstance);
-    if( !instance ){
++ (nonnull CobaltAbstractPlugin *)sharedInstance
+{
+    CobaltAbstractPlugin *instance = (CobaltAbstractPlugin *) objc_getAssociatedObject(self, &_instance);
+    if(! instance)
+    {
         instance = [[self alloc] init];
-        
-        objc_setAssociatedObject(self, &cobaltPluginInstance, instance, OBJC_ASSOCIATION_RETAIN);
+        objc_setAssociatedObject(self, &_instance, instance, OBJC_ASSOCIATION_RETAIN);
     }
     return instance;
 }
@@ -59,31 +60,13 @@ static CobaltAbstractPlugin *cobaltPluginInstance;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (id)init{
-	if (self = [super init]) {
-        _viewControllersArray = [[NSMutableArray alloc] init];
-        
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewControllerDeallocated:) name:viewControllerDeallocatedNotification object:nil];
-    }
-	return self;
-}
-
-- (void)onMessageFromCobaltController:(CobaltViewController *)viewController andData: (NSDictionary *)data {
-}
-
-- (void)onMessageFromWebLayerWithCobaltController:(CobaltViewController *)viewController andData: (NSDictionary *)data {
-
-}
-
-
-- (void)viewControllerDeallocated:(NSNotification *)notification {
-    CobaltViewController * viewController = [notification object];
+- (void)onMessageFromWebView:(WebViewType)webView
+          inCobaltController:(nonnull CobaltViewController *)viewController
+                  withAction:(nonnull NSString *)action
+                        data:(nullable NSDictionary *)data
+          andCallbackChannel:(nullable NSString *)callbackChannel
+{
     
-    [cobaltPluginInstance.viewControllersArray removeObject: [NSValue valueWithNonretainedObject: viewController]];
-}
-
-- (void) dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:viewControllerDeallocatedNotification object:nil];
 }
 
 @end

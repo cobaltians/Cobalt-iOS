@@ -168,7 +168,8 @@
 //PLUGIN
 #define kJSTypePlugin                       @"plugin"
 #define kJSPluginName                       @"name"
-#define kJSPluginClasses                       @"classes"
+#define kJSPluginClasses                    @"classes"
+#define kJSCallbackChannel                  @"callbackChannel"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -320,29 +321,6 @@ typedef NSInteger WebViewType;
 - (void) sendMessage:(NSDictionary *) message;
 
 - (void) sendMessageToWebLayer:(NSDictionary *) message;
-
-/*!
- @method		-(void) sendCallback:(NSString *)callbackId withData:(NSObject *)data
- @abstract		this methods sends a callback with the givent callbackId and the object as parameter of the methods which is called in JS
- @param         callbackId : the callbackID given by a former JS call, so that JS calls the appropriate method
- @param         object : the object to send to the JS method which corresponds to the callbackId given
- @discussion    This method should NOT be overridden in subclasses.
- */
-- (void)sendCallback:(NSString *)callback withData:(NSObject *)data;
-
-- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data;
-
-/*!
- @method		- (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
- @abstract		this method sends an event with a data object and an optional callback
- @param         event: event fired
- @param         data: data object to send to JS
- @param         callback: the callback JS should calls when message is treated
- @discussion    This method should NOT be overridden in subclasses.
- */
-- (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
-
-- (void)sendEventToWebLayer:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
 
 /*!
  @method        - (BOOL)handleDictionarySentByJavaScript:(NSDictionary *)message

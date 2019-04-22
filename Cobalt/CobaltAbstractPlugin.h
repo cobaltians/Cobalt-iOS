@@ -27,23 +27,29 @@
  *
  */
 
-#import <Foundation/Foundation.h>
-
 #import "CobaltViewController.h"
 
 @interface CobaltAbstractPlugin : NSObject
 
-@property (nonatomic, retain) NSMutableArray *viewControllersArray;
-
 /*!
- @method    + (CobaltAbstractPlugin *)sharedInstanceWithCobaltViewController:(CobaltViewController *)viewController
+ @method    + (CobaltAbstractPlugin *)sharedInstance
  @abstract  Returns the singleton instance of a Cobalt plugin.
  @result    The singleton instance of a Cobalt plugin.
  */
-+ (CobaltAbstractPlugin *)sharedInstanceWithCobaltViewController:(CobaltViewController *)viewController;
-- (void)onMessageFromCobaltController:(CobaltViewController *)viewController
-                              andData:(NSDictionary *)data;
-- (void)onMessageFromWebLayerWithCobaltController:(CobaltViewController *)viewController
-                                          andData:(NSDictionary *)data;
++ (nonnull CobaltAbstractPlugin *)sharedInstance;
+
+/*!
+ @method    - (void)onMessageFromWebView:(WebViewType)webView
+                      inCobaltController:(nonnull CobaltViewController *)viewController
+                              withAction:(nonnull NSString *)action
+                                    data:(nullable NSDictionary *)data
+                      andCallbackChannel:(nullable NSString *)callbackChannel
+ @abstract  Called when a message with action and data optional data & callbackChannel is sent for a plugin from a webView hosted by a viewController.
+ */
+- (void)onMessageFromWebView:(WebViewType)webView
+          inCobaltController:(nonnull CobaltViewController *)viewController
+                  withAction:(nonnull NSString *)action
+                        data:(nullable NSDictionary *)data
+          andCallbackChannel:(nullable NSString *)callbackChannel;
 
 @end

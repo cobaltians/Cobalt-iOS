@@ -1950,7 +1950,7 @@ clickedButtonAtIndex:(NSNumber *)index {
                                               withData:data];
                          webLayerPage = nil;
                          
-                         //[webLayer stringByEvaluatingJavaScriptFromString:@"document.open();document.close();"];
+                         [webLayer stringByEvaluatingJavaScriptFromString:@"document.open();document.close();"];
                      }];
 }
 

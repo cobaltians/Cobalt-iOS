@@ -61,7 +61,7 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
 
 #import "CobaltViewController.h"
 
-#define COBALT_VERSION     @"0.6"
+#define COBALT_VERSION     @"1.0"
 
 #define viewControllerDeallocatedNotification   @"viewControllerDeallocatedNotification"
 

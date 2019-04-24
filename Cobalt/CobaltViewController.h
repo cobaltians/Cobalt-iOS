@@ -30,6 +30,7 @@
 #import <UIKit/UIKit.h>
 #import <JavaScriptCore/JavaScriptCore.h>
 
+#import "CobaltAlert.h"
 #import "CobaltToast.h"
 #import "CobaltBarButtonItem.h"
 #import "BackBarButtonItem.h"
@@ -39,9 +40,6 @@
 #pragma mark JAVASCRIPT KEYS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-//COBALT VERSION
-#define IOSCurrentVersion                   @"0.5.1"
 
 // GENERAL
 #define kJSAction                           @"action"
@@ -58,7 +56,6 @@
 
 // CALLBACK
 #define JSTypeCallBack                      @"callback"
-#define JSCallbackSimpleAcquitment          @"callbackSimpleAcquitment"
 
 // COBALT IS READY
 #define JSTypeCobaltIsReady                 @"cobaltIsReady"
@@ -142,8 +139,13 @@
 #define JSTypeWebLayer                      @"webLayer"
 #define JSActionWebLayerShow                @"show"
 #define JSActionWebLayerDismiss             @"dismiss"
+#define JSActionWebLayerBringToFront        @"bringToFront"
+#define JSActionWebLayerSendToBack          @"sendToBack"
 #define kJSWebLayerFadeDuration             @"fadeDuration"
 #define JSEventWebLayerOnDismiss            @"onWebLayerDismissed"
+#define JSEventWebLayerOnLoading            @"onWebLayerLoading"
+#define JSEventWebLayerOnLoaded             @"onWebLayerLoaded"
+#define JSEventWebLayerOnLoadFailed         @"onWebLayerLoadFailed"
 #define kJSIsWebLayer                       @"isWebLayer"
 
 //INTENT
@@ -165,6 +167,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma mark ENUM
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum {
+    WEB_VIEW = 0,
+    WEB_LAYER = 1
+};
+typedef NSInteger WebViewType;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
 #pragma mark PROTOCOL
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -175,15 +189,15 @@
 - (void)onCobaltIsReady;
 
 @required
-- (BOOL)onUnhandledMessage:(NSDictionary *)message;
-- (BOOL)onUnhandledEvent:(NSString *)event withData:(NSDictionary *)data andCallback:(NSString *)callback;
-- (BOOL)onUnhandledCallback:(NSString *)callback withData:(NSDictionary *)data;
-
-@end
-
-@protocol CobaltViewControllerJS <JSExport>
-
-- (BOOL)onCobaltMessage:(NSString *)message;
+- (BOOL)onUnhandledMessage:(NSDictionary *)message
+               fromWebView:(WebViewType)webView;
+- (BOOL)onUnhandledEvent:(NSString *)event
+                withData:(NSDictionary *)data
+             andCallback:(NSString *)callback
+             fromWebView:(WebViewType)webView;
+- (BOOL)onUnhandledCallback:(NSString *)callback
+                   withData:(NSDictionary *)data
+                fromWebView:(WebViewType)webView;
 
 @end
 
@@ -193,16 +207,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-    WEB_VIEW,
-    WEB_LAYER
-} WebViewType;
-
 /*!
  @class			CobaltViewController
  @abstract		Base class for a webView controller that allows javascript/native dialogs
  */
-@interface CobaltViewController : UIViewController <UIAlertViewDelegate, UIScrollViewDelegate, UIWebViewDelegate, CobaltToastDelegate, CobaltViewControllerJS, CobaltBarButtonItemDelegate, BackBarButtonItemDelegate>
+@interface CobaltViewController : UIViewController <UIScrollViewDelegate, UIWebViewDelegate, CobaltAlertDelegate, CobaltToastDelegate, CobaltBarButtonItemDelegate, BackBarButtonItemDelegate>
 {
     // Javascript queues
     NSOperationQueue * toJavaScriptOperationQueue;
@@ -235,13 +244,7 @@ typedef enum {
  @property		webView
  @abstract		the webView displaying content
  */
-@property (strong, nonatomic) IBOutlet UIWebView * webView;
-
-/*!
- @property		activityIndicator
- @abstract		an activity indicator shown- while the webView is loading
- */
-@property (strong, nonatomic) UIActivityIndicatorView * activityIndicator;
+@property (weak, nonatomic) IBOutlet UIWebView * webView;
 
 /*!
  @property		pageName
@@ -256,7 +259,7 @@ typedef enum {
  */
 @property (strong, nonatomic) NSDictionary *navigationData;
 
-@property (strong, nonatomic) UIWebView * webLayer;
+@property (weak, nonatomic) IBOutlet UIWebView * webLayer;
 
 /*!
  @property             refreshControl
@@ -320,7 +323,7 @@ typedef enum {
        andController:(nullable NSString *)controller;
     
 /*!
- @method		- (void)setDelegate:(id)delegate
+ @method		- (void)setDelegate:(id<CobaltDelegate>)delegate
  @abstract		this method sets the delegate which responds to CobaltDelegate protocol
  */
 - (void)setDelegate:(id<CobaltDelegate>)delegate;
@@ -360,6 +363,8 @@ typedef enum {
  */
 - (void)sendCallback:(NSString *)callback withData:(NSObject *)data;
 
+- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data;
+
 /*!
  @method		- (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
  @abstract		this method sends an event with a data object and an optional callback
@@ -369,8 +374,6 @@ typedef enum {
  @discussion    This method should NOT be overridden in subclasses.
  */
 - (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
-
-- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data;
 
 - (void)sendEventToWebLayer:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
 
@@ -392,13 +395,30 @@ typedef enum {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma mark LIFECYCLE
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)onAppStarted:(NSNotification *)notification;
+- (void)onAppBackground:(NSNotification *)notification;
+- (void)onAppForeground:(NSNotification *)notification;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
 #pragma mark BARS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)configureBars;
+- (void)resetBars;
+- (void)setBarsVisible:(NSDictionary *)visible;
 - (void)setBarButtonItems;
+- (void)setBadgeLabelText:(NSString *)text
+    forBarButtonItemNamed:(NSString *)name;
 - (CobaltBarButtonItem *)barButtonItemForAction:(NSDictionary *)action;
+- (void)onBarButtonItemPressed:(NSString *)name;
+- (void)setContent:(NSDictionary *)content
+forBarButtonItemNamed:(NSString *)name;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -442,5 +462,23 @@ typedef enum {
  @abstract		Starts loading more content in webview
  */
 - (void)loadMoreContentInWebview;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark WEB LAYER
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*!
+ @method      - (void)bringWebLayerToFront
+ @abstract    this method sends the WebView to the back, so the WebLayer appears above it
+ */
+- (void)bringWebLayerToFront;
+
+/*!
+ @method      - (void)bringWebLayerToFront
+ @abstract    this method sends the WebLayer to the back, so the WebView appears above it
+ */
+- (void)sendWebLayerToBack;
 
 @end

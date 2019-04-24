@@ -1666,6 +1666,10 @@ forBarButtonItemNamed:(NSString *)name {
             NSDictionary *controllerConfiguration = [Cobalt configurationForController:controller];
             if (controllerConfiguration != nil) {
                 controllerClassName = [controllerConfiguration objectForKey:kConfigurationIOS];
+                if (controllerClassName == nil)
+                {
+                    controllerClassName = @"CobaltViewController";
+                }
             }
         }
         

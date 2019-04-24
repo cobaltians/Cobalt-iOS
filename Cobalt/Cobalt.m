@@ -124,11 +124,19 @@ static NSString *sResourcePath;
     int infiniteScrollOffset = [configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] != nil ? [[configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] intValue] : 0;
     NSDictionary *barsDictionary = [configuration objectForKey:kConfigurationBars];
     
-    if (className == nil) {
-#if DEBUG_COBALT
-        NSLog(@"cobaltViewControllerForController:andPage: no class found for %@ controller", controller);
-#endif
-        return nil;
+    if (className == nil)
+    {
+        CobaltViewController *viewController = [[CobaltViewController alloc] initWithNibName:NIB_DEFAULT
+                                                                                      bundle:cobaltBundle];
+        viewController.pageName = page;
+        viewController.background = background;
+        viewController.scrollsToTop = scrollsToTop;
+        viewController.isPullToRefreshEnabled = pullToRefreshEnabled;
+        viewController.isInfiniteScrollEnabled = infiniteScrollEnabled;
+        viewController.infiniteScrollOffset = infiniteScrollOffset;
+        viewController.barsConfiguration = barsDictionary;
+        
+        return viewController;
     }
     
     Class class = [Cobalt cobaltViewControllerClassWithName:className];

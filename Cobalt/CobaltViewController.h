@@ -151,10 +151,10 @@
 #define JSActionWebLayerBringToFront        @"bringToFront"
 #define JSActionWebLayerSendToBack          @"sendToBack"
 #define kJSWebLayerFadeDuration             @"fadeDuration"
-#define JSEventWebLayerOnDismiss            @"onWebLayerDismissed"
-#define JSEventWebLayerOnLoading            @"onWebLayerLoading"
-#define JSEventWebLayerOnLoaded             @"onWebLayerLoaded"
-#define JSEventWebLayerOnLoadFailed         @"onWebLayerLoadFailed"
+#define JSEventWebLayerOnDismiss            @"cobalt:onWebLayerDismissed"
+#define JSEventWebLayerOnLoading            @"cobalt:onWebLayerLoading"
+#define JSEventWebLayerOnLoaded             @"cobalt:onWebLayerLoaded"
+#define JSEventWebLayerOnLoadFailed         @"cobalt:onWebLayerLoadFailed"
 #define kJSIsWebLayer                       @"isWebLayer"
 
 //INTENT

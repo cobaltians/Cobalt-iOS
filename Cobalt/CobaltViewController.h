@@ -168,6 +168,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma mark ENUM
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum {
+    WEB_VIEW = 0,
+    WEB_LAYER = 1
+};
+typedef NSInteger WebViewType;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
 #pragma mark PROTOCOL
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -178,9 +190,15 @@
 - (void)onCobaltIsReady;
 
 @required
-- (BOOL)onUnhandledMessage:(NSDictionary *)message;
-- (BOOL)onUnhandledEvent:(NSString *)event withData:(NSDictionary *)data andCallback:(NSString *)callback;
-- (BOOL)onUnhandledCallback:(NSString *)callback withData:(NSDictionary *)data;
+- (BOOL)onUnhandledMessage:(NSDictionary *)message
+               fromWebView:(WebViewType)webView;
+- (BOOL)onUnhandledEvent:(NSString *)event
+                withData:(NSDictionary *)data
+             andCallback:(NSString *)callback
+             fromWebView:(WebViewType)webView;
+- (BOOL)onUnhandledCallback:(NSString *)callback
+                   withData:(NSDictionary *)data
+                fromWebView:(WebViewType)webView;
 
 @end
 
@@ -189,12 +207,6 @@
 #pragma mark INTERFACE
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-enum {
-    WEB_VIEW = 0,
-    WEB_LAYER = 1
-};
-typedef NSInteger WebViewType;
 
 /*!
  @class			CobaltViewController
@@ -360,6 +372,8 @@ typedef NSInteger WebViewType;
  */
 - (void)sendCallback:(NSString *)callback withData:(NSObject *)data;
 
+- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data;
+
 /*!
  @method		- (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
  @abstract		this method sends an event with a data object and an optional callback
@@ -369,8 +383,6 @@ typedef NSInteger WebViewType;
  @discussion    This method should NOT be overridden in subclasses.
  */
 - (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
-
-- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data;
 
 - (void)sendEventToWebLayer:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
 
@@ -397,6 +409,9 @@ typedef NSInteger WebViewType;
 - (void)setBadgeLabelText:(NSString *)text
     forBarButtonItemNamed:(NSString *)name;
 - (CobaltBarButtonItem *)barButtonItemForAction:(NSDictionary *)action;
+- (void)onBarButtonItemPressed:(NSString *)name;
+- (void)setContent:(NSDictionary *)content
+forBarButtonItemNamed:(NSString *)name;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -440,5 +455,23 @@ typedef NSInteger WebViewType;
  @abstract		Starts loading more content in webview
  */
 - (void)loadMoreContentInWebview;
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark WEB LAYER
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*!
+ @method      - (void)bringWebLayerToFront
+ @abstract    this method sends the WebView to the back, so the WebLayer appears above it
+ */
+- (void)bringWebLayerToFront;
+
+/*!
+ @method      - (void)bringWebLayerToFront
+ @abstract    this method sends the WebLayer to the back, so the WebView appears above it
+ */
+- (void)sendWebLayerToBack;
 
 @end

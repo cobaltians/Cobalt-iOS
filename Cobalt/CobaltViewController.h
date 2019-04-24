@@ -279,7 +279,7 @@ typedef NSInteger WebViewType;
 
 /*!
  @property		barsConfiguration
- @abstract		bars configuration as defined in cobalt.conf or sent by Web on navigation
+ @abstract		bars configuration as defined in cobalt.json or sent by Web on navigation
  */
 @property NSMutableDictionary *barsConfiguration;
 

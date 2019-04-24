@@ -137,7 +137,7 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
 
 /*!
  @method    + (NSDictionary *)defaultConfiguration
- @abstract  Returns the default controller configuration contained in the cobalt.conf file if any
+ @abstract  Returns the default controller configuration contained in the cobalt.json file if any
             nil otherwise
  */
 + (NSDictionary *)defaultConfiguration;
@@ -145,14 +145,14 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
 /*!
  @method    + (NSDictionary *)configurationForController:(NSString *)controller
  @param     controller the controller to find the configuration
- @abstract  Returns the configuration for the specified controller contained in the cobalt.conf file if any
+ @abstract  Returns the configuration for the specified controller contained in the cobalt.json file if any
             nil otherwise
  */
 + (NSDictionary *)configurationForController:(NSString *)controller;
 
 /*!
  @method    + (NSDictionary *)cobaltConfiguration
- @abstract  Returns the Cobalt configuration read from cobalt.conf file in resource path.
+ @abstract  Returns the Cobalt configuration read from cobalt.json file in resource path.
             May be nil vor various reasons.
  */
 + (NSDictionary *)cobaltConfiguration;

@@ -364,7 +364,7 @@ static NSString *sResourcePath;
     
     NSData *data = [Cobalt dataWithContentsOfFile:[NSString stringWithFormat:@"%@%@",
                                                    cobaltResourcePath,
-                                                   @"cobalt.conf"]];
+                                                   @"cobalt.json"]];
     if (data == nil) {
         return nil;
     }

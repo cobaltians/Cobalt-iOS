@@ -24,6 +24,7 @@
 
 /* Begin PBXBuildFile section */
 		710EAF3E1DAE3924008729F1 /* Cobalt-Bridging-Header.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 710EAF3D1DAE390A008729F1 /* Cobalt-Bridging-Header.h */; };
+		9F3C69FB227837D90052C068 /* Image.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F3C69F9227837D80052C068 /* Image.m */; };
 		BE31EB211C3EC52100141B6E /* Cobalt.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB201C3EC52100141B6E /* Cobalt.m */; };
 		BE31EB3D1C3EC62900141B6E /* BackBarButtonItem.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB281C3EC62900141B6E /* BackBarButtonItem.m */; };
 		BE31EB3E1C3EC62900141B6E /* CobaltAbstractPlugin.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB2B1C3EC62900141B6E /* CobaltAbstractPlugin.m */; };
@@ -114,6 +115,8 @@
 
 /* Begin PBXFileReference section */
 		710EAF3D1DAE390A008729F1 /* Cobalt-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Cobalt-Bridging-Header.h"; sourceTree = "<group>"; };
+		9F3C69F9227837D80052C068 /* Image.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Image.m; sourceTree = "<group>"; };
+		9F3C69FA227837D90052C068 /* Image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Image.h; sourceTree = "<group>"; };
 		BE31EB1B1C3EC52100141B6E /* libCobalt.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCobalt.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE31EB1E1C3EC52100141B6E /* Cobalt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Cobalt.h; sourceTree = "<group>"; };
 		BE31EB201C3EC52100141B6E /* Cobalt.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Cobalt.m; sourceTree = "<group>"; };
@@ -179,6 +182,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9F3C69F8227837CC0052C068 /* tools */ = {
+			isa = PBXGroup;
+			children = (
+				9F3C69FA227837D90052C068 /* Image.h */,
+				9F3C69F9227837D80052C068 /* Image.m */,
+			);
+			name = tools;
+			sourceTree = "<group>";
+		};
 		BE31EB121C3EC52100141B6E = {
 			isa = PBXGroup;
 			children = (
@@ -201,6 +213,7 @@
 		BE31EB1D1C3EC52100141B6E /* Cobalt */ = {
 			isa = PBXGroup;
 			children = (
+				9F3C69F8227837CC0052C068 /* tools */,
 				710EAF3D1DAE390A008729F1 /* Cobalt-Bridging-Header.h */,
 				BE31EB1E1C3EC52100141B6E /* Cobalt.h */,
 				BE31EB201C3EC52100141B6E /* Cobalt.m */,
@@ -467,6 +480,7 @@
 				BEC4C67B225F2CD500CE3692 /* PubSub.m in Sources */,
 				BE31EB3E1C3EC62900141B6E /* CobaltAbstractPlugin.m in Sources */,
 				BE31EB441C3EC62900141B6E /* CobaltViewController.m in Sources */,
+				9F3C69FB227837D90052C068 /* Image.m in Sources */,
 				BEC4C67A225F2CD500CE3692 /* PubSubWebReceiver.m in Sources */,
 				BE31EB421C3EC62900141B6E /* CobaltPluginManager.m in Sources */,
 				BE31EB411C3EC62900141B6E /* CobaltFontManager.m in Sources */,

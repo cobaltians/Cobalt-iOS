@@ -1011,6 +1011,11 @@ forBarButtonItemNamed:(NSString *)name {
                 NSLog(@"handleDictionarySentByJavaScript - cobaltIsReady: Cobalt version mismatch (iOS: %@, Web: %@).", COBALT_VERSION, version);
             }
 #endif
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self onReady];
+            });
+            
             messageHandled = YES;
         }
         
@@ -1558,6 +1563,11 @@ forBarButtonItemNamed:(NSString *)name {
         NSLog(@"onCobaltMessage:fromWebView: message not handled %@", [dict description]);
 #endif
     }
+}
+
+- (void)onReady
+{
+    
 }
 
 - (void) sendMessage:(NSDictionary *) message {

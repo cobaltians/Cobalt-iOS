@@ -318,6 +318,11 @@ typedef NSInteger WebViewType;
  */
 - (void)loadPage:(NSString *)page inWebView:(UIWebView *)mWebView;
 
+/*!
+ @method        - (void)onReady;
+ @abstract      this method is called when Web has notified native that it is ready to receive messages
+ */
+- (void)onReady;
 
 /*!
  @method		- (void) sendMessage:(NSDictionary *) message;

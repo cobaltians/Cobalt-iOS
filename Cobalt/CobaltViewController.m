@@ -34,7 +34,7 @@
 #import "PubSub.h"
 #import "iToast.h"
 
-@interface CobaltViewController () {
+@interface CobaltViewController () <PubSubDelegate> {
     /*
     NSMutableArray *topLeftBarButtonItems;
     NSMutableArray *topRightBarButtonItems;
@@ -110,6 +110,9 @@ NSString * webLayerPage;
     
     fromJavaScriptOperationQueue = [[NSOperationQueue alloc] init] ;
     [fromJavaScriptOperationQueue setSuspended:YES];
+    
+    [[PubSub sharedInstance] subscribeDelegate:self
+                                     toChannel:JSEventOnAppStarted];
 }
 
 - (void)initWithPage:(nonnull NSString *)page
@@ -243,6 +246,8 @@ NSString * webLayerPage;
                                action:@selector(refresh)
                      forControlEvents:UIControlEventValueChanged];
     
+    [[PubSub sharedInstance] unsubscribeDelegate:self
+                                     fromChannel:JSEventOnAppStarted];
     [[NSNotificationCenter defaultCenter] postNotificationName:viewControllerDeallocatedNotification
                                                         object:self];
 }
@@ -1986,6 +1991,23 @@ clickedButtonAtIndex:(NSNumber *)index {
                                                                         dict, kJSData,
                                                                         nil];
     [self sendEvent:JSEventWebLayerOnDismiss withData:data andCallback:nil];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark PUBSUB DELEGATE METHODS
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)didReceiveMessage:(nullable NSDictionary *)message
+                onChannel:(nonnull NSString *)channel
+{
+    if ([JSEventOnAppStarted isEqualToString:channel])
+    {
+        [self sendEvent:JSEventOnAppStarted
+               withData:nil
+            andCallback:nil];;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

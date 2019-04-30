@@ -70,6 +70,7 @@
 @synthesize isInfiniteScrollEnabled,
             isPullToRefreshEnabled,
             pageName,
+            controller,
             webLayer,
             webView;
 
@@ -114,42 +115,7 @@ NSString * webLayerPage;
 - (void)initWithPage:(nonnull NSString *)page
        andController:(nullable NSString *)controller {
     self.pageName = page;
-    
-    NSDictionary *configuration = [Cobalt configurationForController:controller];
-    if (configuration == nil) {
-        configuration = [Cobalt defaultConfiguration];
-    }
-    
-    if (configuration == nil) {
-        _background = [UIColor whiteColor];
-        _scrollsToTop = YES;
-        self.isPullToRefreshEnabled = false;
-        self.isInfiniteScrollEnabled = false;
-        self.infiniteScrollOffset = 0;
-        self.barsConfiguration = nil;
-    }
-    else {
-        id backgroundColor = [configuration objectForKey:kConfigurationControllerBackgroundColor];
-        BOOL scrollsToTop = [configuration objectForKey:kConfigurationControllerScrollsToTop] != nil ? [[configuration objectForKey:kConfigurationControllerScrollsToTop] boolValue] : YES;
-        BOOL pullToRefreshEnabled = [[configuration objectForKey:kConfigurationControllerPullToRefresh] boolValue];
-        BOOL infiniteScrollEnabled = [[configuration objectForKey:kConfigurationControllerInfiniteScroll] boolValue];
-        int infiniteScrollOffset = [configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] != nil ? [[configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] intValue] : 0;
-        NSDictionary *barsDictionary = [configuration objectForKey:kConfigurationBars];
-
-        _background = [UIColor whiteColor];
-        if (backgroundColor != nil
-            && [backgroundColor isKindOfClass:[NSString class]]) {
-            UIColor *parsedBackgroundColor = [Cobalt colorFromHexString:backgroundColor];
-            if (parsedBackgroundColor != nil) {
-                _background = parsedBackgroundColor;
-            }
-        }
-        _scrollsToTop = scrollsToTop;
-        self.isPullToRefreshEnabled = pullToRefreshEnabled;
-        self.isInfiniteScrollEnabled = infiniteScrollEnabled;
-        self.infiniteScrollOffset = infiniteScrollOffset;
-        self.barsConfiguration = [barsDictionary mutableCopy];
-    }
+    self.controller = controller;
 }
 
 - (void)viewDidLoad
@@ -157,6 +123,13 @@ NSString * webLayerPage;
     [super viewDidLoad];
     
     // Do any additional setup after loading the view from its nib.
+    if (! controller
+        || controller.length == 0)
+    {
+        controller = defaultController;
+    }
+    [self loadController:controller];
+    
     self.view.backgroundColor = _background;
     webView.scrollView.scrollsToTop = _scrollsToTop;
     
@@ -858,6 +831,45 @@ forBarButtonItemNamed:(NSString *)name {
     }
     NSURLRequest *requestURL = [NSURLRequest requestWithURL:url];
     [mWebView loadRequest:requestURL];
+}
+
+- (void)loadController:(nullable NSString *)controller
+{
+    NSDictionary *configuration = [Cobalt configurationForController:controller];
+    if (configuration == nil) {
+        configuration = [Cobalt defaultConfiguration];
+    }
+    
+    if (configuration == nil) {
+        _background = [UIColor whiteColor];
+        _scrollsToTop = YES;
+        self.isPullToRefreshEnabled = false;
+        self.isInfiniteScrollEnabled = false;
+        self.infiniteScrollOffset = 0;
+        self.barsConfiguration = nil;
+    }
+    else {
+        id backgroundColor = [configuration objectForKey:kConfigurationControllerBackgroundColor];
+        BOOL scrollsToTop = [configuration objectForKey:kConfigurationControllerScrollsToTop] != nil ? [[configuration objectForKey:kConfigurationControllerScrollsToTop] boolValue] : YES;
+        BOOL pullToRefreshEnabled = [[configuration objectForKey:kConfigurationControllerPullToRefresh] boolValue];
+        BOOL infiniteScrollEnabled = [[configuration objectForKey:kConfigurationControllerInfiniteScroll] boolValue];
+        int infiniteScrollOffset = [configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] != nil ? [[configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] intValue] : 0;
+        NSDictionary *barsDictionary = [configuration objectForKey:kConfigurationBars];
+        
+        _background = [UIColor whiteColor];
+        if (backgroundColor != nil
+            && [backgroundColor isKindOfClass:[NSString class]]) {
+            UIColor *parsedBackgroundColor = [Cobalt colorFromHexString:backgroundColor];
+            if (parsedBackgroundColor != nil) {
+                _background = parsedBackgroundColor;
+            }
+        }
+        _scrollsToTop = scrollsToTop;
+        self.isPullToRefreshEnabled = pullToRefreshEnabled;
+        self.isInfiniteScrollEnabled = infiniteScrollEnabled;
+        self.infiniteScrollOffset = infiniteScrollOffset;
+        self.barsConfiguration = [barsDictionary mutableCopy];
+    }
 }
 
 - (void)executeScriptInWebView:(WebViewType)webViewType

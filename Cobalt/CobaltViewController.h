@@ -164,6 +164,7 @@
 
 // HTML
 #define defaultHtmlPage                     @"index.html"
+#define defaultController                   @"default"
 
 //PLUGIN
 #define kJSTypePlugin                       @"plugin"
@@ -232,6 +233,12 @@ typedef NSInteger WebViewType;
  @discussion    the file must be located at ressourcePath
  */
 @property (strong, nonatomic) NSString * pageName;
+
+/*!
+ @property        controller
+ @abstract        the name of the configuration in the cobalt.json file to apply for this CobaltViewController 
+ */
+@property (strong, nonatomic) NSString *controller;
 
 /*!
  @property             navigationData

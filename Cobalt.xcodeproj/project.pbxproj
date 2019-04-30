@@ -24,7 +24,8 @@
 
 /* Begin PBXBuildFile section */
 		710EAF3E1DAE3924008729F1 /* Cobalt-Bridging-Header.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 710EAF3D1DAE390A008729F1 /* Cobalt-Bridging-Header.h */; };
-		9F3C69FB227837D90052C068 /* Image.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F3C69F9227837D80052C068 /* Image.m */; };
+		9F3C6A0022788DB90052C068 /* Image.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F3C69FF22788DB90052C068 /* Image.m */; };
+		9FC3F58C22788F3A003D5F17 /* Image.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9F3C69FE22788DB80052C068 /* Image.h */; };
 		BE31EB211C3EC52100141B6E /* Cobalt.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB201C3EC52100141B6E /* Cobalt.m */; };
 		BE31EB3D1C3EC62900141B6E /* BackBarButtonItem.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB281C3EC62900141B6E /* BackBarButtonItem.m */; };
 		BE31EB3E1C3EC62900141B6E /* CobaltAbstractPlugin.m in Sources */ = {isa = PBXBuildFile; fileRef = BE31EB2B1C3EC62900141B6E /* CobaltAbstractPlugin.m */; };
@@ -90,6 +91,7 @@
 			dstPath = "include/$(PRODUCT_NAME)";
 			dstSubfolderSpec = 16;
 			files = (
+				9FC3F58C22788F3A003D5F17 /* Image.h in CopyFiles */,
 				BEC4C687225FA31700CE3692 /* PubSubWebReceiver.h in CopyFiles */,
 				BEC4C685225FA29100CE3692 /* PubSub.h in CopyFiles */,
 				BEC4C686225FA29100CE3692 /* PubSubReceiver.h in CopyFiles */,
@@ -115,8 +117,8 @@
 
 /* Begin PBXFileReference section */
 		710EAF3D1DAE390A008729F1 /* Cobalt-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Cobalt-Bridging-Header.h"; sourceTree = "<group>"; };
-		9F3C69F9227837D80052C068 /* Image.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Image.m; sourceTree = "<group>"; };
-		9F3C69FA227837D90052C068 /* Image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Image.h; sourceTree = "<group>"; };
+		9F3C69FE22788DB80052C068 /* Image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Image.h; sourceTree = "<group>"; };
+		9F3C69FF22788DB90052C068 /* Image.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Image.m; sourceTree = "<group>"; };
 		BE31EB1B1C3EC52100141B6E /* libCobalt.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCobalt.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE31EB1E1C3EC52100141B6E /* Cobalt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Cobalt.h; sourceTree = "<group>"; };
 		BE31EB201C3EC52100141B6E /* Cobalt.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Cobalt.m; sourceTree = "<group>"; };
@@ -182,13 +184,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		9F3C69F8227837CC0052C068 /* tools */ = {
+		9F3C69FD22788D900052C068 /* Tools */ = {
 			isa = PBXGroup;
 			children = (
-				9F3C69FA227837D90052C068 /* Image.h */,
-				9F3C69F9227837D80052C068 /* Image.m */,
+				9F3C69FE22788DB80052C068 /* Image.h */,
+				9F3C69FF22788DB90052C068 /* Image.m */,
 			);
-			name = tools;
+			name = Tools;
 			sourceTree = "<group>";
 		};
 		BE31EB121C3EC52100141B6E = {
@@ -213,7 +215,7 @@
 		BE31EB1D1C3EC52100141B6E /* Cobalt */ = {
 			isa = PBXGroup;
 			children = (
-				9F3C69F8227837CC0052C068 /* tools */,
+				9F3C69FD22788D900052C068 /* Tools */,
 				710EAF3D1DAE390A008729F1 /* Cobalt-Bridging-Header.h */,
 				BE31EB1E1C3EC52100141B6E /* Cobalt.h */,
 				BE31EB201C3EC52100141B6E /* Cobalt.m */,
@@ -452,7 +454,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\n\nexport FRAMEWORK_LOCN=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework\"\n\n# Create the path to the real Headers die\nmkdir -p \"${FRAMEWORK_LOCN}/Versions/A/Headers\"\n\n# Create the required symlinks\n/bin/ln -sfh A \"${FRAMEWORK_LOCN}/Versions/Current\"\n/bin/ln -sfh Versions/Current/Headers \"${FRAMEWORK_LOCN}/Headers\"\n/bin/ln -sfh \"Versions/Current/${PRODUCT_NAME}\" \\\n\"${FRAMEWORK_LOCN}/${PRODUCT_NAME}\"\n\n# Copy the public headers into the framework\n/bin/cp -a \"${BUILT_PRODUCTS_DIR}/include/Cobalt/\" \\\n\"${FRAMEWORK_LOCN}/Versions/A/Headers\"";
+			shellScript = "set -e\n\nexport FRAMEWORK_LOCN=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework\"\n\n# Create the path to the real Headers die\nmkdir -p \"${FRAMEWORK_LOCN}/Versions/A/Headers\"\n\n# Create the required symlinks\n/bin/ln -sfh A \"${FRAMEWORK_LOCN}/Versions/Current\"\n/bin/ln -sfh Versions/Current/Headers \"${FRAMEWORK_LOCN}/Headers\"\n/bin/ln -sfh \"Versions/Current/${PRODUCT_NAME}\" \\\n\"${FRAMEWORK_LOCN}/${PRODUCT_NAME}\"\n\n# Copy the public headers into the framework\n/bin/cp -a \"${BUILT_PRODUCTS_DIR}/include/Cobalt/\" \\\n\"${FRAMEWORK_LOCN}/Versions/A/Headers\"\n";
 		};
 		BEFF88351C3ED3FB0063AA18 /* MultiPlatform Build */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -480,7 +482,7 @@
 				BEC4C67B225F2CD500CE3692 /* PubSub.m in Sources */,
 				BE31EB3E1C3EC62900141B6E /* CobaltAbstractPlugin.m in Sources */,
 				BE31EB441C3EC62900141B6E /* CobaltViewController.m in Sources */,
-				9F3C69FB227837D90052C068 /* Image.m in Sources */,
+				9F3C6A0022788DB90052C068 /* Image.m in Sources */,
 				BEC4C67A225F2CD500CE3692 /* PubSubWebReceiver.m in Sources */,
 				BE31EB421C3EC62900141B6E /* CobaltPluginManager.m in Sources */,
 				BE31EB411C3EC62900141B6E /* CobaltFontManager.m in Sources */,

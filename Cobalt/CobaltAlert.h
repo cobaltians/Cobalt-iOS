@@ -16,8 +16,8 @@
 @required
 
 - (void)alert:(CobaltAlert *)alert
- withCallback:(NSString *)callback
-clickedButtonAtIndex:(NSInteger)index;
+withIdentifier:(NSNumber *)identifier
+clickedButtonAtIndex:(NSNumber *)index;
 
 @end
 
@@ -25,14 +25,13 @@ clickedButtonAtIndex:(NSInteger)index;
 
 @property (strong, nonatomic) UIAlertController *alertController;
 @property (strong, nonatomic) UIAlertView *alertView;
-@property (strong, nonatomic) NSString *callback;
+@property (strong, nonatomic) NSNumber *identifier;
 @property (weak, nonatomic) id<CobaltAlertDelegate> delegate;
-@property (strong, nonatomic) UIViewController *viewController;
+@property (weak, nonatomic) UIViewController *viewController;
 
 - (instancetype)initWithData:(NSDictionary *)data
-                    callback:(NSString *)callback
-                 andDelegate:(id<CobaltAlertDelegate>)delegate
-          fromViewController:(UIViewController *)viewController;
+                 andDelegate:(nonnull id<CobaltAlertDelegate>)delegate
+          fromViewController:(nonnull UIViewController *)viewController;
 
 - (void)show;
 

@@ -35,6 +35,8 @@
 
 #import <UIKit/UIKit.h>
 
+#import "PubSubReceiver.h"
+
 //! Project version number for Cobalt.
 FOUNDATION_EXPORT double CobaltVersionNumber;
 
@@ -59,7 +61,7 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
 
 #import "CobaltViewController.h"
 
-#define COBALT_VERSION     @"0.6"
+#define COBALT_VERSION     @"1.0"
 
 #define viewControllerDeallocatedNotification   @"viewControllerDeallocatedNotification"
 
@@ -135,7 +137,7 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
 
 /*!
  @method    + (NSDictionary *)defaultConfiguration
- @abstract  Returns the default controller configuration contained in the cobalt.conf file if any
+ @abstract  Returns the default controller configuration contained in the cobalt.json file if any
             nil otherwise
  */
 + (NSDictionary *)defaultConfiguration;
@@ -143,14 +145,14 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
 /*!
  @method    + (NSDictionary *)configurationForController:(NSString *)controller
  @param     controller the controller to find the configuration
- @abstract  Returns the configuration for the specified controller contained in the cobalt.conf file if any
+ @abstract  Returns the configuration for the specified controller contained in the cobalt.json file if any
             nil otherwise
  */
 + (NSDictionary *)configurationForController:(NSString *)controller;
 
 /*!
  @method    + (NSDictionary *)cobaltConfiguration
- @abstract  Returns the Cobalt configuration read from cobalt.conf file in resource path.
+ @abstract  Returns the Cobalt configuration read from cobalt.json file in resource path.
             May be nil vor various reasons.
  */
 + (NSDictionary *)cobaltConfiguration;
@@ -170,5 +172,33 @@ FOUNDATION_EXPORT const unsigned char CobaltVersionString[];
             May be nil if the input format is not valid.
  */
 + (UIColor *)colorFromHexString:(NSString *)hexString;
+
+/*!
+ @method    + (void)onAppStarted
+ @abstract  To be called on AppDelegate's application:didFinishLaunchingWithOptions: method
+            Forward the app lifecycle event to components which subscribed to "cobalt:onAppStarted"
+ */
++ (void)onAppStarted;
+
+/*!
+ @method    + (void)onAppForeground
+ @abstract  To be called on AppDelegate's applicationWillEnterForeground: method
+            Forward the app lifecycle event to components which subscribed to "cobalt:onAppForeground"
+ */
++ (void)onAppForeground;
+
+/*!
+ @method    + (void)onAppBackground
+ @abstract  To be called on AppDelegate's applicationDidEnterBackground: method
+            Forward the app lifecycle event to components which subscribed to "cobalt:onAppBackground"
+ */
++ (void)onAppBackground;
+
++ (void)subscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                toChannel:(nonnull NSString *)channel;
++ (void)unsubscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                fromChannel:(nonnull NSString *)channel;
++ (void)publishMessage:(nullable NSDictionary *)message
+             toChannel:(nonnull NSString *)channel;
 
 @end

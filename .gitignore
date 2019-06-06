@@ -81,3 +81,5 @@ DerivedData
 
 Carthage/Build
 
+#MacOS
+.DS_Store

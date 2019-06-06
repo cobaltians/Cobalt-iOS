@@ -31,10 +31,10 @@
 
 #import "Cobalt.h"
 #import "CobaltPluginManager.h"
-
+#import "PubSub.h"
 #import "iToast.h"
 
-@interface CobaltViewController () {
+@interface CobaltViewController () <PubSubDelegate> {
     /*
     NSMutableArray *topLeftBarButtonItems;
     NSMutableArray *topRightBarButtonItems;
@@ -55,10 +55,13 @@
  @abstract		this method sends a JSON to the webView to execute a script (allows interactions from the native to the webView)
  @param         webViewType: the webview where the script is due to be executed
  @param         dict: a NSDictionary that contains the necessary informations to execute the script
- @discussion    the webView MUST have a function "nativeBridge.execute(%@);" that receives the JSON (representing dict) as parameter
+ @param         executeFirst: YES if you want this script to be executed in priority, NO otherwise
+ @discussion    the webView MUST have a function "cobalt.private.execute(%@);" that receives the JSON (representing dict) as parameter
  @discussion    This method should NOT be overridden in subclasses.
  */
-- (void)executeScriptInWebView:(WebViewType)webViewType withDictionary:(NSDictionary *)dict;
+- (void)executeScriptInWebView:(WebViewType)webViewType
+                withDictionary:(NSDictionary *)dict
+                toExecuteFirst:(BOOL)executeFirst;
 
 @end
 
@@ -67,6 +70,7 @@
 @synthesize isInfiniteScrollEnabled,
             isPullToRefreshEnabled,
             pageName,
+            controller,
             webLayer,
             webView;
 
@@ -107,50 +111,14 @@ NSString * webLayerPage;
     fromJavaScriptOperationQueue = [[NSOperationQueue alloc] init] ;
     [fromJavaScriptOperationQueue setSuspended:YES];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(onAppStarted:)
-                                                 name:kOnAppStarted object:nil];
+    [[PubSub sharedInstance] subscribeDelegate:self
+                                     toChannel:JSEventOnAppStarted];
 }
 
 - (void)initWithPage:(nonnull NSString *)page
        andController:(nullable NSString *)controller {
     self.pageName = page;
-    
-    NSDictionary *configuration = [Cobalt configurationForController:controller];
-    if (configuration == nil) {
-        configuration = [Cobalt defaultConfiguration];
-    }
-    
-    if (configuration == nil) {
-        _background = [UIColor whiteColor];
-        _scrollsToTop = YES;
-        self.isPullToRefreshEnabled = false;
-        self.isInfiniteScrollEnabled = false;
-        self.infiniteScrollOffset = 0;
-        self.barsConfiguration = nil;
-    }
-    else {
-        id backgroundColor = [configuration objectForKey:kConfigurationControllerBackgroundColor];
-        BOOL scrollsToTop = [configuration objectForKey:kConfigurationControllerScrollsToTop] != nil ? [[configuration objectForKey:kConfigurationControllerScrollsToTop] boolValue] : YES;
-        BOOL pullToRefreshEnabled = [[configuration objectForKey:kConfigurationControllerPullToRefresh] boolValue];
-        BOOL infiniteScrollEnabled = [[configuration objectForKey:kConfigurationControllerInfiniteScroll] boolValue];
-        int infiniteScrollOffset = [configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] != nil ? [[configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] intValue] : 0;
-        NSDictionary *barsDictionary = [configuration objectForKey:kConfigurationBars];
-
-        _background = [UIColor whiteColor];
-        if (backgroundColor != nil
-            && [backgroundColor isKindOfClass:[NSString class]]) {
-            UIColor *parsedBackgroundColor = [Cobalt colorFromHexString:backgroundColor];
-            if (parsedBackgroundColor != nil) {
-                _background = parsedBackgroundColor;
-            }
-        }
-        _scrollsToTop = scrollsToTop;
-        self.isPullToRefreshEnabled = pullToRefreshEnabled;
-        self.isInfiniteScrollEnabled = infiniteScrollEnabled;
-        self.infiniteScrollOffset = infiniteScrollOffset;
-        self.barsConfiguration = [barsDictionary mutableCopy];
-    }
+    self.controller = controller;
 }
 
 - (void)viewDidLoad
@@ -158,6 +126,13 @@ NSString * webLayerPage;
     [super viewDidLoad];
     
     // Do any additional setup after loading the view from its nib.
+    if (! controller
+        || controller.length == 0)
+    {
+        controller = defaultController;
+    }
+    [self loadController:controller];
+    
     self.view.backgroundColor = _background;
     webView.scrollView.scrollsToTop = _scrollsToTop;
     
@@ -217,12 +192,6 @@ NSString * webLayerPage;
     [self configureBars];
     [self setBarButtonItems];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(onAppBackground:)
-                                                 name:kOnAppBackgroundNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(onAppForeground:)
-                                                 name:kOnAppForegroundNotification object:nil];
     if ([[UIDevice currentDevice].systemVersion compare:@"8.0"
                                                 options:NSNumericSearch] == NSOrderedAscending) {
         [[NSNotificationCenter defaultCenter] addObserver:self
@@ -250,13 +219,6 @@ NSString * webLayerPage;
     [fromJavaScriptOperationQueue setSuspended:YES];
     
     [self resetBars];
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kOnAppBackgroundNotification
-                                                  object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kOnAppForegroundNotification
-                                                  object:nil];
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -274,15 +236,18 @@ NSString * webLayerPage;
 {
     toJavaScriptOperationQueue = nil;
     fromJavaScriptOperationQueue = nil;
-    _delegate = nil;
+    webView.scrollView.delegate = nil;
+    webView.delegate = nil;
     webView = nil;
     pageName = nil;
     webLayer = nil;
     
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kOnAppStarted
-                                                  object:nil];
+    [self.refreshControl removeTarget:self
+                               action:@selector(refresh)
+                     forControlEvents:UIControlEventValueChanged];
     
+    [[PubSub sharedInstance] unsubscribeDelegate:self
+                                     fromChannel:JSEventOnAppStarted];
     [[NSNotificationCenter defaultCenter] postNotificationName:viewControllerDeallocatedNotification
                                                         object:self];
 }
@@ -306,12 +271,12 @@ NSString * webLayerPage;
 }
 
 - (void)onAppForeground:(NSNotification *)notification {
-    [self sendEvent:JSEventOnAppForeground
-           withData:nil
-        andCallback:nil];
-    
     [self sendEvent:JSEventOnPageShown
            withData:_navigationData
+        andCallback:nil];
+    
+    [self sendEvent:JSEventOnAppForeground
+           withData:nil
         andCallback:nil];
     
     _navigationData = nil;
@@ -841,8 +806,9 @@ forBarButtonItemNamed:(NSString *)name {
     [super viewWillTransitionToSize:size
           withTransitionCoordinator:coordinator];
     
+    __weak typeof(self) weakSelf = self;
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> _Nonnull context) {
-        [self resizeBarButtonitems];
+        [weakSelf resizeBarButtonitems];
     }
                                  completion:nil];
 }
@@ -854,12 +820,6 @@ forBarButtonItemNamed:(NSString *)name {
 #pragma mark METHODS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (void)setDelegate:(id<CobaltDelegate>)delegate {
-    if (delegate) {
-        _delegate = delegate;
-    }
-}
 
 - (void)customWebView
 {
@@ -878,9 +838,57 @@ forBarButtonItemNamed:(NSString *)name {
     [mWebView loadRequest:requestURL];
 }
 
-- (void)executeScriptInWebView:(WebViewType)webViewType withDictionary:(NSDictionary *)dict
+- (void)loadController:(nullable NSString *)controller
 {
-    [toJavaScriptOperationQueue addOperationWithBlock:^{
+    NSDictionary *configuration = [Cobalt configurationForController:controller];
+    if (configuration == nil) {
+        configuration = [Cobalt defaultConfiguration];
+    }
+    
+    if (configuration == nil) {
+        _background = [UIColor whiteColor];
+        _scrollsToTop = YES;
+        self.isPullToRefreshEnabled = false;
+        self.isInfiniteScrollEnabled = false;
+        self.infiniteScrollOffset = 0;
+        self.barsConfiguration = nil;
+    }
+    else {
+        id backgroundColor = [configuration objectForKey:kConfigurationControllerBackgroundColor];
+        BOOL scrollsToTop = [configuration objectForKey:kConfigurationControllerScrollsToTop] != nil ? [[configuration objectForKey:kConfigurationControllerScrollsToTop] boolValue] : YES;
+        BOOL pullToRefreshEnabled = [[configuration objectForKey:kConfigurationControllerPullToRefresh] boolValue];
+        BOOL infiniteScrollEnabled = [[configuration objectForKey:kConfigurationControllerInfiniteScroll] boolValue];
+        int infiniteScrollOffset = [configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] != nil ? [[configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] intValue] : 0;
+        NSDictionary *barsDictionary = [configuration objectForKey:kConfigurationBars];
+        
+        _background = [UIColor whiteColor];
+        if (backgroundColor != nil
+            && [backgroundColor isKindOfClass:[NSString class]]) {
+            UIColor *parsedBackgroundColor = [Cobalt colorFromHexString:backgroundColor];
+            if (parsedBackgroundColor != nil) {
+                _background = parsedBackgroundColor;
+            }
+        }
+        _scrollsToTop = scrollsToTop;
+        self.isPullToRefreshEnabled = pullToRefreshEnabled;
+        self.isInfiniteScrollEnabled = infiniteScrollEnabled;
+        self.infiniteScrollOffset = infiniteScrollOffset;
+        self.barsConfiguration = [barsDictionary mutableCopy];
+    }
+}
+
+- (void)executeScriptInWebView:(WebViewType)webViewType
+                withDictionary:(NSDictionary *)dict
+                toExecuteFirst:(BOOL)executeFirst
+{
+    BOOL operationQueueWasSuspended = toJavaScriptOperationQueue.suspended;
+    
+    if (executeFirst)
+    {
+        toJavaScriptOperationQueue.suspended = YES;
+    }
+    
+    NSBlockOperation *operation =  [NSBlockOperation blockOperationWithBlock:^{
         if ([NSJSONSerialization isValidJSONObject:dict]) {
             NSError * error;
             NSString * message =[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:dict options:0 error:&error] encoding:NSUTF8StringEncoding];
@@ -889,7 +897,7 @@ forBarButtonItemNamed:(NSString *)name {
                 // Ensures there is no raw newLine in message.
                 message = [[message componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@""];
                 
-                NSString * script = [NSString stringWithFormat:@"cobalt.execute(%@);", message];
+                NSString * script = [NSString stringWithFormat:@"cobalt.private.execute(%@);", message];
                 
                 UIWebView * webViewToExecute;
                 switch(webViewType) {
@@ -910,25 +918,23 @@ forBarButtonItemNamed:(NSString *)name {
 #endif
         }
     }];
+    if (executeFirst)
+    {
+        operation.queuePriority = NSOperationQueuePriorityVeryHigh;
+    }
+    [toJavaScriptOperationQueue addOperation:operation];
+    
+    toJavaScriptOperationQueue.suspended = operationQueueWasSuspended;
 }
 
-- (void)sendCallback:(NSString *)callback withData:(NSObject *)data
-{
-    if (callback
-        && callback.length > 0) {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:   JSTypeCallBack, kJSType,
-                                                                            callback, kJSCallback,
-                                                                            data, kJSData,
-                                                                            nil];
-        [self executeScriptInWebView:WEB_VIEW withDictionary:dict];
-    }
-#if DEBUG_COBALT
-    else {
-        NSLog(@"sendCallback: invalid callback (null or empty)");
-    }
-#endif
-}
-
+/*!
+ @method        - (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
+ @abstract      this method sends an event with a data object and an optional callback
+ @param         event: event fired
+ @param         data: data object to send to JS
+ @param         callback: the callback JS should calls when message is treated
+ @discussion    This method should NOT be overridden in subclasses.
+ */
 - (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
 {
     if (event
@@ -943,28 +949,13 @@ forBarButtonItemNamed:(NSString *)name {
             [dict setObject:callback forKey:kJSCallback];
         }
         
-        [self executeScriptInWebView:WEB_VIEW withDictionary:dict];
+        [self executeScriptInWebView:WEB_VIEW
+                      withDictionary:dict
+                      toExecuteFirst:[JSEventOnPageShown isEqualToString:event]];
     }
 #if DEBUG_COBALT
     else {
         NSLog(@"sendEvent: invalid event (null or empty)");
-    }
-#endif
-}
-
-- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data
-{
-    if (callback
-        && callback.length > 0) {
-        NSDictionary * dict = [NSDictionary dictionaryWithObjectsAndKeys:   JSTypeCallBack, kJSType,
-                               callback, kJSCallback,
-                               data, kJSData,
-                               nil];
-        [self executeScriptInWebView:WEB_LAYER withDictionary:dict];
-    }
-#if DEBUG_COBALT
-    else {
-        NSLog(@"sendCallbackToWebLayer: invalid callback (null or empty)");
     }
 #endif
 }
@@ -983,7 +974,9 @@ forBarButtonItemNamed:(NSString *)name {
             [dict setObject:callback forKey:kJSCallback];
         }
         
-        [self executeScriptInWebView:WEB_LAYER withDictionary:dict];
+        [self executeScriptInWebView:WEB_LAYER
+                      withDictionary:dict
+                      toExecuteFirst:[JSEventOnPageShown isEqualToString:event]];
     }
 #if DEBUG_COBALT
     else {
@@ -1013,99 +1006,67 @@ forBarButtonItemNamed:(NSString *)name {
     
     if (type
         && [type isKindOfClass:[NSString class]]) {
-        
-        // CALLBACK
-        if ([type isEqualToString:JSTypeCallBack]) {
-            NSString * callback = [dict objectForKey:kJSCallback];
-            NSDictionary * data = [dict objectForKey:kJSData];
-            
-            if (callback
-                && [callback isKindOfClass:[NSString class]]) {
-                if ([callback isEqualToString:JSEventCallbackOnBackButtonPressed]) {
-                    [self popViewController];
-                    
-                    messageHandled = YES;
-                }
-                else if ([callback isEqualToString:JSCallbackPullToRefreshDidRefresh]) {
-                    [self onPullToRefreshDidRefresh];
-                    
-                    messageHandled = YES;
-                }
-                else if ([callback isEqualToString:JSCallbackInfiniteScrollDidRefresh]) {
-                    [self onInfiniteScrollDidRefresh];
-                    
-                    messageHandled = YES;
-                }
-                else {
-                    if (_delegate != nil
-                        && [_delegate respondsToSelector:@selector(onUnhandledCallback:withData:fromWebView:)]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [_delegate onUnhandledCallback:callback
-                                                  withData:data
-                                               fromWebView:webViewType];
-                        });
-                    }
-#if DEBUG_COBALT
-                    else {
-                        NSLog(@"handleDictionarySentByJavaScript: unhandled callback %@", [dict description]);
-                    }
-#endif
-                    messageHandled = YES;
-                }
-            }
-#if DEBUG_COBALT
-            else {
-                NSLog(@"handleDictionarySentByJavaScript: callback field missing or not a string (message: %@)", [dict description]);
-            }
-#endif
-        }
-        
         // COBALT IS READY
-        else if ([type isEqualToString:JSTypeCobaltIsReady]) {
+        if ([type isEqualToString:JSTypeCobaltIsReady]) {
             [toJavaScriptOperationQueue setSuspended:NO];
             
-            if (_delegate != nil
-                && [_delegate respondsToSelector:@selector(onCobaltIsReady)]) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [_delegate onCobaltIsReady];
-                });
-            }
 #if DEBUG_COBALT
             NSString *version = [dict objectForKey:KJSVersion];
             if (! [version isEqualToString:COBALT_VERSION]) {
                 NSLog(@"handleDictionarySentByJavaScript - cobaltIsReady: Cobalt version mismatch (iOS: %@, Web: %@).", COBALT_VERSION, version);
             }
 #endif
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self onReady];
+            });
+            
             messageHandled = YES;
         }
         
-        // EVENT
-        else if ([type isEqualToString:JSTypeEvent]) {
-            NSString *event = [dict objectForKey:kJSEvent];
-            NSDictionary *data = [dict objectForKey:kJSData];
-            NSString *callback = [dict objectForKey:kJSCallback];
-            
-            if (event &&
-                [event isKindOfClass:[NSString class]]) {
-                if (_delegate != nil
-                    && [_delegate respondsToSelector:@selector(onUnhandledEvent:withData:andCallback:fromWebView:)]) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [_delegate onUnhandledEvent:event
-                                           withData:data
-                                        andCallback:callback
-                                        fromWebView:webViewType];
-                    });
+        // PUBSUB
+        else if ([type isEqualToString:JSTypePubsub]) {
+            NSString *action = [dict objectForKey:kJSAction];
+            if (action != nil
+                && [action isKindOfClass:[NSString class]]) {
+                NSString *channel = [dict objectForKey:kJSChannel];
+                NSDictionary *message = [dict objectForKey:kJSMessage];
+                
+                if (channel != nil
+                    && [channel isKindOfClass:[NSString class]]) {
+                    if ([action isEqualToString:JSActionSubscribe]) {
+                        [[PubSub sharedInstance] subscribeWebView:webViewType
+                                                        toChannel:channel
+                                               fromViewController:self];
+                    }
+                    else if ([action isEqualToString:JSActionUnsubscribe]) {
+                        [[PubSub sharedInstance] unsubscribeWebView:webViewType
+                                                        fromChannel:channel
+                                                  andViewController:self];
+                    }
+                    else if ([action isEqualToString:JSActionPublish]) {
+                        if (message != nil
+                            && [message isKindOfClass:[NSDictionary class]])
+                        {
+                            [[PubSub sharedInstance] publishMessage:message
+                                                          toChannel:channel];
+                        }
+#if DEBUG_COBALT
+                        else {
+                            NSLog(@"onCobaltMessage: message field missing or not an object (message: %@)", [dict description]);
+                        }
+#endif
+                    }
                 }
 #if DEBUG_COBALT
                 else {
-                    NSLog(@"handleDictionarySentByJavaScript: unhandled event %@", [dict description]);
+                    NSLog(@"onCobaltMessage: channel field missing or not a string (message: %@)", [dict description]);
                 }
 #endif
-                messageHandled = YES;
             }
 #if DEBUG_COBALT
             else {
-                NSLog(@"handleDictionarySentByJavaScript: event field missing or not a string (message: %@)", [dict description]);
+                NSLog(@"onCobaltMessage: action field missing or not a string (message: %@)", [dict description]);
             }
 #endif
         }
@@ -1277,6 +1238,37 @@ forBarButtonItemNamed:(NSString *)name {
                                 
                                 messageHandled = YES;
                             }
+                            else if ([action isEqualToString:JSActionDismiss]) {
+                                [self onPullToRefreshDidRefresh];
+                                
+                                messageHandled = YES;
+                            }
+                        }
+#if DEBUG_COBALT
+                        else {
+                            NSLog(@"handleDictionarySentByJavaScript: action field missing or not a string (message: %@)", [dict description]);
+                        }
+#endif
+                    }
+#if DEBUG_COBALT
+                    else {
+                        NSLog(@"handleDictionarySentByJavaScript: data field missing or not an object (message: %@)", [dict description]);
+                    }
+#endif
+                }
+                
+                // INFINITE SCROLL
+                else if ([control isEqualToString:JSControlInfiniteScroll]) {
+                    if (data
+                        && [data isKindOfClass:[NSDictionary class]]) {
+                        NSString *action = [data objectForKey: kJSAction];
+                        if (action
+                            && [action isKindOfClass: [NSString class]]) {
+                            if ([action isEqualToString:JSActionDismiss]) {
+                                [self onInfiniteScrollDidRefresh];
+                                
+                                messageHandled = YES;
+                            }
                         }
 #if DEBUG_COBALT
                         else {
@@ -1304,10 +1296,11 @@ forBarButtonItemNamed:(NSString *)name {
                                 if (bars != nil
                                     && [bars isKindOfClass:[NSDictionary class]]) {
                                     _barsConfiguration = bars;
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self configureBars];
-                                        [self resetBarButtonItems];
-                                        [self setBarButtonItems];
+                                        [weakSelf configureBars];
+                                        [weakSelf resetBarButtonItems];
+                                        [weakSelf setBarButtonItems];
                                     });
                                     
                                     messageHandled = YES;
@@ -1323,8 +1316,9 @@ forBarButtonItemNamed:(NSString *)name {
                                 id visible = [data objectForKey:kConfigurationBarsVisible];
                                 if (visible != nil
                                     && [visible isKindOfClass:[NSDictionary class]]) {
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self setBarsVisible:visible];
+                                        [weakSelf setBarsVisible:visible];
                                     });
                                     
                                     messageHandled = YES;
@@ -1340,8 +1334,9 @@ forBarButtonItemNamed:(NSString *)name {
                                 id content = [data objectForKey:kJSContent];
                                 if (content != nil
                                     && [content isKindOfClass:[NSDictionary class]]) {
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self setBarContent:content];
+                                        [weakSelf setBarContent:content];
                                     });
                                     
                                     messageHandled = YES;
@@ -1359,9 +1354,10 @@ forBarButtonItemNamed:(NSString *)name {
                                 
                                 if (barButtonItemName != nil && [barButtonItemName isKindOfClass:[NSString class]]
                                     && badge != nil && [badge isKindOfClass:[NSString class]]) {
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self setBadgeLabelText:badge
-                                          forBarButtonItemNamed:barButtonItemName];
+                                        [weakSelf setBadgeLabelText:badge
+                                              forBarButtonItemNamed:barButtonItemName];
                                     });
                                     
                                     messageHandled = YES;
@@ -1379,9 +1375,10 @@ forBarButtonItemNamed:(NSString *)name {
                                 
                                 if (barButtonItemName != nil && [barButtonItemName isKindOfClass:[NSString class]]
                                     && visible != nil && [visible isKindOfClass:[NSNumber class]]) {
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self setVisible:[visible boolValue]
-                                   forBarButtonItemNamed:barButtonItemName];
+                                        [weakSelf setVisible:[visible boolValue]
+                                       forBarButtonItemNamed:barButtonItemName];
                                     });
                                     
                                     messageHandled = YES;
@@ -1399,9 +1396,10 @@ forBarButtonItemNamed:(NSString *)name {
                                 
                                 if (barButtonItemName != nil && [barButtonItemName isKindOfClass:[NSString class]]
                                     && enabled != nil && [enabled isKindOfClass:[NSNumber class]]) {
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self setEnabled:[enabled boolValue]
-                                   forBarButtonItemNamed:barButtonItemName];
+                                        [weakSelf setEnabled:[enabled boolValue]
+                                       forBarButtonItemNamed:barButtonItemName];
                                     });
                                     
                                     messageHandled = YES;
@@ -1419,9 +1417,10 @@ forBarButtonItemNamed:(NSString *)name {
                                 
                                 if (barButtonItemName != nil && [barButtonItemName isKindOfClass:[NSString class]]
                                     && content != nil && [content isKindOfClass:[NSDictionary class]]) {
+                                    __weak typeof(self) weakSelf = self;
                                     dispatch_async(dispatch_get_main_queue(), ^(void) {
-                                        [self setContent:content
-                                   forBarButtonItemNamed:barButtonItemName];
+                                        [weakSelf setContent:content
+                                       forBarButtonItemNamed:barButtonItemName];
                                     });
                                     
                                     messageHandled = YES;
@@ -1465,8 +1464,9 @@ forBarButtonItemNamed:(NSString *)name {
                 if ([action isEqualToString:JSActionWebLayerShow]) {
                     if (data
                         && [data isKindOfClass:[NSDictionary class]]) {
+                        __weak typeof(self) weakSelf = self;
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            [self showWebLayer:data];
+                            [weakSelf showWebLayer:data];
                         });
                         
                         messageHandled = YES;
@@ -1480,8 +1480,9 @@ forBarButtonItemNamed:(NSString *)name {
                 
                 // DISMISS
                 else if([action isEqualToString:JSActionWebLayerDismiss]) {
+                    __weak typeof(self) weakSelf = self;
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        [self dismissWebLayer:data];
+                        [weakSelf dismissWebLayer:data];
                     });
                     
                     messageHandled = YES;
@@ -1489,8 +1490,9 @@ forBarButtonItemNamed:(NSString *)name {
                 
                 // BRING TO FRONT
                 else if ([action isEqualToString:JSActionWebLayerBringToFront]) {
+                    __weak typeof(self) weakSelf = self;
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        [self bringWebLayerToFront];
+                        [weakSelf bringWebLayerToFront];
                     });
                     
                     messageHandled = YES;
@@ -1498,8 +1500,9 @@ forBarButtonItemNamed:(NSString *)name {
                 
                 // SEND TO BACK
                 else if ([action isEqualToString:JSActionWebLayerSendToBack]) {
+                    __weak typeof(self) weakSelf = self;
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        [self sendWebLayerToBack];
+                        [weakSelf sendWebLayerToBack];
                     });
                     
                     messageHandled = YES;
@@ -1546,35 +1549,39 @@ forBarButtonItemNamed:(NSString *)name {
 #endif
         }
         // PLUGIN
-        else if ([type isEqualToString: kJSTypePlugin]) {
+        else if ([type isEqualToString: kJSTypePlugin])
+        {
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [[CobaltPluginManager sharedInstance] onMessageFromWebView:webViewType
-                                                  fromCobaltViewController:self
-                                                                   andData:dict];
+                [CobaltPluginManager onMessage:dict
+                                   fromWebView:webViewType
+                            inCobaltController:weakSelf];
             });
             
             messageHandled = YES;
         }
     }
     
-    if (! messageHandled) {
-        if (_delegate != nil
-            && [_delegate respondsToSelector:@selector(onUnhandledMessage:fromWebView:)]) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [_delegate onUnhandledMessage:dict
-                                  fromWebView:webViewType];
-            });
-        }
+    if (! messageHandled)
+    {
 #if DEBUG_COBALT
-        else {
-            NSLog(@"handleDictionarySentByJavaScript: unhandled message %@", [dict description]);
-        }
+        NSLog(@"onCobaltMessage:fromWebView: message not handled %@", [dict description]);
 #endif
     }
 }
 
+- (void)onReady
+{
+    
+}
+
 - (void) sendMessage:(NSDictionary *) message {
-    if (message != nil) [self executeScriptInWebView:WEB_VIEW withDictionary:message];
+    if (message != nil)
+    {
+        [self executeScriptInWebView:WEB_VIEW
+                      withDictionary:message
+                      toExecuteFirst:NO];
+    }
 #if DEBUG_COBALT
     else NSLog(@"sendMessage: message is nil!");
 #endif
@@ -1584,7 +1591,8 @@ forBarButtonItemNamed:(NSString *)name {
 - (void)sendMessageToWebLayer:(NSDictionary *)message {
     if (message != nil) {
         [self executeScriptInWebView:WEB_LAYER
-                      withDictionary:message];
+                      withDictionary:message
+                      toExecuteFirst:NO];
     }
 #if DEBUG_COBALT
     else {
@@ -1621,9 +1629,10 @@ forBarButtonItemNamed:(NSString *)name {
             }
             
             // Push corresponding viewController
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.navigationController pushViewController:viewController
-                                                     animated:YES];
+                [weakSelf.navigationController pushViewController:viewController
+                                                         animated:YES];
             });
         }
     }
@@ -1632,9 +1641,10 @@ forBarButtonItemNamed:(NSString *)name {
         UIViewController *viewController = [Cobalt nativeViewControllerForController:controller];
         if (viewController != nil) {
             // Push corresponding viewController
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.navigationController pushViewController:viewController
-                                                     animated:YES];
+                [weakSelf.navigationController pushViewController:viewController
+                                                         animated:YES];
             });
         }
     }
@@ -1647,8 +1657,9 @@ forBarButtonItemNamed:(NSString *)name {
 
 
 - (void)popViewController {
+    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.navigationController popViewControllerAnimated:YES];
+        [weakSelf.navigationController popViewControllerAnimated:YES];
     });
 }
 
@@ -1670,8 +1681,9 @@ forBarButtonItemNamed:(NSString *)name {
             }
         }
         
+        __weak typeof(self) weakSelf = self;
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self.navigationController popViewControllerAnimated:YES];
+            [weakSelf.navigationController popViewControllerAnimated:YES];
         });
     }
     else {
@@ -1681,6 +1693,10 @@ forBarButtonItemNamed:(NSString *)name {
             NSDictionary *controllerConfiguration = [Cobalt configurationForController:controller];
             if (controllerConfiguration != nil) {
                 controllerClassName = [controllerConfiguration objectForKey:kConfigurationIOS];
+                if (controllerClassName == nil)
+                {
+                    controllerClassName = @"CobaltViewController";
+                }
             }
         }
         
@@ -1692,9 +1708,10 @@ forBarButtonItemNamed:(NSString *)name {
                     ((CobaltViewController *)viewController).navigationData = innerData;
                 }
                 
+                __weak typeof(self) weakSelf = self;
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.navigationController popToViewController:viewController
-                                                          animated:YES];
+                    [weakSelf.navigationController popToViewController:viewController
+                                                              animated:YES];
                 });
                 break;
             }
@@ -1723,10 +1740,11 @@ forBarButtonItemNamed:(NSString *)name {
                 viewController.navigationData = innerData;
             }
             
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self presentViewController:[[UINavigationController alloc] initWithRootViewController:viewController]
-                                   animated:YES
-                                 completion:nil];
+                [weakSelf presentViewController:[[UINavigationController alloc] initWithRootViewController:viewController]
+                                       animated:YES
+                                     completion:nil];
             });
         }
     }
@@ -1734,10 +1752,11 @@ forBarButtonItemNamed:(NSString *)name {
              && [controller isKindOfClass:[NSString class]]){
         UIViewController *viewController = [Cobalt nativeViewControllerForController:controller];
         if (viewController != nil) {
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self presentViewController:[[UINavigationController alloc] initWithRootViewController:viewController]
-                                   animated:YES
-                                 completion:nil];
+                [weakSelf presentViewController:[[UINavigationController alloc] initWithRootViewController:viewController]
+                                       animated:YES
+                                     completion:nil];
             });
         }
     }
@@ -1750,9 +1769,10 @@ forBarButtonItemNamed:(NSString *)name {
 
 - (void)dismissViewController {
     if (self.presentingViewController) {
+        __weak typeof(self) weakSelf = self;
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self.presentingViewController dismissViewControllerAnimated:YES
-                                                              completion:nil];
+            [weakSelf.presentingViewController dismissViewControllerAnimated:YES
+                                                                  completion:nil];
         });
     }
 #if DEBUG_COBALT
@@ -1782,9 +1802,10 @@ forBarButtonItemNamed:(NSString *)name {
             }
         }
         
+        __weak typeof(self) weakSelf = self;
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self.presentingViewController dismissViewControllerAnimated:YES
-                                                              completion:nil];
+            [weakSelf.presentingViewController dismissViewControllerAnimated:YES
+                                                                  completion:nil];
         });
     }
 #if DEBUG_COBALT
@@ -1818,17 +1839,18 @@ forBarButtonItemNamed:(NSString *)name {
             }
             
             // replace current view with corresponding viewController
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (clearHistory) {
-                    [self.navigationController setViewControllers:@[viewController]
-                                                         animated:animated];
+                    [weakSelf.navigationController setViewControllers:@[viewController]
+                                                             animated:animated];
                 }
                 else {
-                    NSMutableArray *viewControllers = [NSMutableArray arrayWithArray:self.navigationController.viewControllers];
+                    NSMutableArray *viewControllers = [NSMutableArray arrayWithArray:weakSelf.navigationController.viewControllers];
                     [viewControllers replaceObjectAtIndex:(viewControllers.count - 1)
                                                withObject:viewController];
-                    [self.navigationController setViewControllers:viewControllers
-                                                         animated:animated];
+                    [weakSelf.navigationController setViewControllers:viewControllers
+                                                             animated:animated];
                 }
             });
         }
@@ -1838,17 +1860,18 @@ forBarButtonItemNamed:(NSString *)name {
         UIViewController *viewController = [Cobalt nativeViewControllerForController:controller];
         if (viewController != nil) {
             // Push corresponding viewController
+            __weak typeof(self) weakSelf = self;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (clearHistory) {
-                    [self.navigationController setViewControllers:@[viewController]
-                                                         animated:animated];
+                    [weakSelf.navigationController setViewControllers:@[viewController]
+                                                             animated:animated];
                 }
                 else {
-                    NSMutableArray *viewControllers = [NSMutableArray arrayWithArray:self.navigationController.viewControllers];
+                    NSMutableArray *viewControllers = [NSMutableArray arrayWithArray:weakSelf.navigationController.viewControllers];
                     [viewControllers replaceObjectAtIndex:(viewControllers.count - 1)
                                                withObject:viewController];
-                    [self.navigationController setViewControllers:viewControllers
-                                                         animated:animated];
+                    [weakSelf.navigationController setViewControllers:viewControllers
+                                                             animated:animated];
                 }
             });
                 
@@ -1868,9 +1891,9 @@ forBarButtonItemNamed:(NSString *)name {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)onBackButtonPressed {
-    [self sendEvent:JSEventCallbackOnBackButtonPressed
+    [self sendEvent:JSEventOnBackButtonPressed
            withData:nil
-        andCallback:JSEventCallbackOnBackButtonPressed];
+        andCallback:nil];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1881,21 +1904,26 @@ forBarButtonItemNamed:(NSString *)name {
 
 - (void)showAlert:(NSDictionary *)dict {
     NSDictionary *data = [dict objectForKey:kJSData];
-    NSString *callback = [dict objectForKey:kJSCallback];
     
+    // TODO: LEAK?
     CobaltAlert *alert = [[CobaltAlert alloc] initWithData:data
-                                                  callback:callback
                                                andDelegate:self
                                         fromViewController:self];
-    [_currentAlerts addObject:alert];
-    [alert show];
+    if (alert != nil)
+    {
+        [_currentAlerts addObject:alert];
+        [alert show];
+    }
 }
 
 - (void)alert:(CobaltAlert *)alert
- withCallback:(NSString *)callback
-clickedButtonAtIndex:(NSInteger)index {
-    [self sendCallback:callback
-              withData:@{kJSAlertButtonIndex: [NSNumber numberWithInteger:index]}];
+withIdentifier:(NSNumber *)identifier
+clickedButtonAtIndex:(NSNumber *)index {
+    NSDictionary *message = @{kJSType: JSTypeUI,
+                              kJSControl: JSControlAlert,
+                              kJSData: @{kJSAlertId: identifier,
+                                         kJSAlertButtonIndex: index}};
+    [self sendMessage:message];
     
     [_currentAlerts removeObject:alert];
 }
@@ -1942,17 +1970,18 @@ clickedButtonAtIndex:(NSInteger)index {
     NSNumber * fadeDuration = [NSNumber numberWithFloat:0.3];
     //NSNumber * fadeDuration = (dict && [dict objectForKey:kJSWebLayerFadeDuration] && [[dict objectForKey:kJSWebLayerFadeDuration] isKindOfClass:[NSNumber class]]) ? [dict objectForKey:kJSWebLayerFadeDuration] : [NSNumber numberWithFloat:0.3];
     
+    __weak typeof(self) weakSelf = self;
     [UIView animateWithDuration:fadeDuration.floatValue
                      animations:^{
-                         [self bringWebLayerToFront];
+                         [weakSelf bringWebLayerToFront];
                          webLayer.hidden = YES;
                      }
                      completion:^(BOOL finished) {
-                         [self onWebLayerDismissed:webLayerPage
-                                          withData:data];
+                         [weakSelf onWebLayerDismissed:webLayerPage
+                                              withData:data];
                          webLayerPage = nil;
                          
-                         //[webLayer stringByEvaluatingJavaScriptFromString:@"document.open();document.close();"];
+                         [webLayer stringByEvaluatingJavaScriptFromString:@"document.open();document.close();"];
                      }];
 }
 
@@ -1962,6 +1991,23 @@ clickedButtonAtIndex:(NSInteger)index {
                                                                         dict, kJSData,
                                                                         nil];
     [self sendEvent:JSEventWebLayerOnDismiss withData:data andCallback:nil];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark PUBSUB DELEGATE METHODS
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)didReceiveMessage:(nullable NSDictionary *)message
+                onChannel:(nonnull NSString *)channel
+{
+    if ([JSEventOnAppStarted isEqualToString:channel])
+    {
+        [self sendEvent:JSEventOnAppStarted
+               withData:nil
+            andCallback:nil];;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1983,10 +2029,11 @@ clickedButtonAtIndex:(NSInteger)index {
     
     // (res)set context
     if ([JSContext class]) {
+        __weak typeof(self) weakSelf = self;
         JSContext *context = [currentWebView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
         context[@"CobaltViewController"] = @{@"onCobaltMessage":^(NSString *message) {
-            [self onCobaltMessage:message
-                      fromWebView:currentWebView];
+            [weakSelf onCobaltMessage:message
+                          fromWebView:currentWebView];
         }};
     }
     
@@ -1996,10 +2043,11 @@ clickedButtonAtIndex:(NSInteger)index {
 - (void)webViewDidFinishLoad:(UIWebView *)currentWebView {
     // (res)set context
     if ([JSContext class]) {
+        __weak typeof(self) weakSelf = self;
         JSContext *context = [currentWebView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
         context[@"CobaltViewController"] = @{@"onCobaltMessage":^(NSString *message) {
-            [self onCobaltMessage:message
-                      fromWebView:currentWebView];
+            [weakSelf onCobaltMessage:message
+                          fromWebView:currentWebView];
         }};
     }
     
@@ -2020,10 +2068,11 @@ clickedButtonAtIndex:(NSInteger)index {
 didFailLoadWithError:(NSError *)error {
     // (res)set context
     if ([JSContext class]) {
+        __weak typeof(self) weakSelf = self;
         JSContext *context = [currentWebView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
         context[@"CobaltViewController"] = @{@"onCobaltMessage":^(NSString *message) {
-            [self onCobaltMessage:message
-                      fromWebView:currentWebView];
+            [weakSelf onCobaltMessage:message
+                          fromWebView:currentWebView];
         }};
     }
     
@@ -2128,7 +2177,7 @@ didFailLoadWithError:(NSError *)error {
 - (void)refreshWebView {
     [self sendEvent:JSEventPullToRefresh
            withData:nil
-        andCallback:JSCallbackPullToRefreshDidRefresh];
+        andCallback:nil];
 }
 
 
@@ -2140,9 +2189,10 @@ didFailLoadWithError:(NSError *)error {
  @abstract		Tells the control that a refresh operation has ended.
  */
 - (void)onPullToRefreshDidRefresh {
+    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.refreshControl endRefreshing];
-        self.refreshControl.attributedTitle = _ptrRefreshText;
+        [weakSelf.refreshControl endRefreshing];
+        weakSelf.refreshControl.attributedTitle = _ptrRefreshText;
     });
     
     _isRefreshing = NO;
@@ -2156,9 +2206,10 @@ didFailLoadWithError:(NSError *)error {
     _ptrRefreshText = attributedRefreshText;
     _ptrRefreshingText = attributedRefreshingText;
     
+    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.refreshControl.attributedTitle = attributedRefreshText;
-        self.refreshControl.tintColor = tintColor;
+        weakSelf.refreshControl.attributedTitle = attributedRefreshText;
+        weakSelf.refreshControl.tintColor = tintColor;
     });
 }
 
@@ -2178,7 +2229,9 @@ didFailLoadWithError:(NSError *)error {
 
 - (void)loadMoreContentInWebview
 {
-    [self sendEvent:JSEventInfiniteScroll withData:nil andCallback:JSCallbackInfiniteScrollDidRefresh];
+    [self sendEvent:JSEventInfiniteScroll
+           withData:nil
+        andCallback:nil];
 }
 
 - (void)onInfiniteScrollDidRefresh

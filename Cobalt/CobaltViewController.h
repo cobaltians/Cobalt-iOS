@@ -64,6 +64,14 @@
 #define JSTypeEvent                         @"event"
 #define kJSEvent                            @"event"
 
+// PUBSUB
+#define JSTypePubsub                        @"pubsub"
+#define JSActionSubscribe                   @"subscribe"
+#define JSActionUnsubscribe                 @"unsubscribe"
+#define JSActionPublish                     @"publish"
+#define kJSChannel                          @"channel"
+#define kJSMessage                          @"message"
+
 // LOG
 #define JSTypeLog                           @"log"
 
@@ -76,24 +84,22 @@
 #define kJSActionNavigationReplace          @"replace"
 #define kJSNavigationController             @"controller"
 #define kJSBars                             @"bars"
-#define JSEventCallbackOnBackButtonPressed  @"onBackButtonPressed"
+#define JSEventOnBackButtonPressed          @"cobalt:onBackButtonPressed"
 
 #define kJSAnimated                         @"animated"
 #define kJSClearHistory                     @"clearHistory"
 
 //LIFE CYCLE
-#define JSEventOnAppStarted                 @"onAppStarted"
-#define JSEventOnAppForeground              @"onAppForeground"
-#define JSEventOnAppBackground              @"onAppBackground"
-#define JSEventOnPageShown                  @"onPageShown"
+#define JSEventOnAppStarted                 @"cobalt:onAppStarted"
+#define JSEventOnAppForeground              @"cobalt:onAppForeground"
+#define JSEventOnAppBackground              @"cobalt:onAppBackground"
+#define JSEventOnPageShown                  @"cobalt:onPageShown"
 
 // PULL TO REFRESH
-#define JSEventPullToRefresh                @"pullToRefresh"
-#define JSCallbackPullToRefreshDidRefresh   @"pullToRefreshDidRefresh"
+#define JSEventPullToRefresh                @"cobalt:onPullToRefresh"
 
 // INFINITE SCROLL
-#define JSEventInfiniteScroll               @"infiniteScroll"
-#define JSCallbackInfiniteScrollDidRefresh  @"infiniteScrollDidRefresh"
+#define JSEventInfiniteScroll               @"cobalt:onInfiniteScroll"
 
 // UI
 #define JSTypeUI                            @"ui"
@@ -104,12 +110,15 @@
 
 // PULL TO REFRESH
 #define JSControlPullToRefresh              @"pullToRefresh"
+#define JSControlInfiniteScroll             @"infiniteScroll"
+#define JSActionDismiss                     @"dismiss"
 #define JSActionSetTexts                    @"setTexts"
 #define kJSTextsPullToRefresh               @"pullToRefresh"
 #define kJSTextsRefreshing                  @"refreshing"
 
 // ALERT
 #define JSControlAlert                      @"alert"
+#define kJSAlertId                          @"alertId"
 #define kJSAlertTitle                       @"title"
 #define kJSAlertMessage                     @"message"
 #define kJSAlertButtons                     @"buttons"
@@ -142,10 +151,10 @@
 #define JSActionWebLayerBringToFront        @"bringToFront"
 #define JSActionWebLayerSendToBack          @"sendToBack"
 #define kJSWebLayerFadeDuration             @"fadeDuration"
-#define JSEventWebLayerOnDismiss            @"onWebLayerDismissed"
-#define JSEventWebLayerOnLoading            @"onWebLayerLoading"
-#define JSEventWebLayerOnLoaded             @"onWebLayerLoaded"
-#define JSEventWebLayerOnLoadFailed         @"onWebLayerLoadFailed"
+#define JSEventWebLayerOnDismiss            @"cobalt:onWebLayerDismissed"
+#define JSEventWebLayerOnLoading            @"cobalt:onWebLayerLoading"
+#define JSEventWebLayerOnLoaded             @"cobalt:onWebLayerLoaded"
+#define JSEventWebLayerOnLoadFailed         @"cobalt:onWebLayerLoadFailed"
 #define kJSIsWebLayer                       @"isWebLayer"
 
 //INTENT
@@ -155,15 +164,13 @@
 
 // HTML
 #define defaultHtmlPage                     @"index.html"
+#define defaultController                   @"default"
 
 //PLUGIN
 #define kJSTypePlugin                       @"plugin"
 #define kJSPluginName                       @"name"
-
-//NOTIFS
-#define kOnAppStarted                       @"onAppStarted"
-#define kOnAppForegroundNotification        @"onAppForegroundNotification"
-#define kOnAppBackgroundNotification        @"onAppBackgroundNotification"
+#define kJSPluginClasses                    @"classes"
+#define kJSCallbackChannel                  @"callbackChannel"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -176,30 +183,6 @@ enum {
     WEB_LAYER = 1
 };
 typedef NSInteger WebViewType;
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-#pragma mark PROTOCOL
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-@protocol CobaltDelegate <NSObject>
-
-@optional
-- (void)onCobaltIsReady;
-
-@required
-- (BOOL)onUnhandledMessage:(NSDictionary *)message
-               fromWebView:(WebViewType)webView;
-- (BOOL)onUnhandledEvent:(NSString *)event
-                withData:(NSDictionary *)data
-             andCallback:(NSString *)callback
-             fromWebView:(WebViewType)webView;
-- (BOOL)onUnhandledCallback:(NSString *)callback
-                   withData:(NSDictionary *)data
-                fromWebView:(WebViewType)webView;
-
-@end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -224,7 +207,6 @@ typedef NSInteger WebViewType;
     
 @private
     
-    id<CobaltDelegate> _delegate;
     float _lastWebviewContentOffset;
 	BOOL _isLoadingMore;
     BOOL _isRefreshing;
@@ -251,6 +233,12 @@ typedef NSInteger WebViewType;
  @discussion    the file must be located at ressourcePath
  */
 @property (strong, nonatomic) NSString * pageName;
+
+/*!
+ @property        controller
+ @abstract        the name of the configuration in the cobalt.json file to apply for this CobaltViewController 
+ */
+@property (strong, nonatomic) NSString *controller;
 
 /*!
  @property             navigationData
@@ -298,7 +286,7 @@ typedef NSInteger WebViewType;
 
 /*!
  @property		barsConfiguration
- @abstract		bars configuration as defined in cobalt.conf or sent by Web on navigation
+ @abstract		bars configuration as defined in cobalt.json or sent by Web on navigation
  */
 @property NSMutableDictionary *barsConfiguration;
 
@@ -314,12 +302,6 @@ typedef NSInteger WebViewType;
  */
 - (void)initWithPage:(nonnull NSString *)page
        andController:(nullable NSString *)controller;
-    
-/*!
- @method		- (void)setDelegate:(id<CobaltDelegate>)delegate
- @abstract		this method sets the delegate which responds to CobaltDelegate protocol
- */
-- (void)setDelegate:(id<CobaltDelegate>)delegate;
 
 /*!
  @method		-(void) customView
@@ -336,6 +318,11 @@ typedef NSInteger WebViewType;
  */
 - (void)loadPage:(NSString *)page inWebView:(UIWebView *)mWebView;
 
+/*!
+ @method        - (void)onReady;
+ @abstract      this method is called when Web has notified native that it is ready to receive messages
+ */
+- (void)onReady;
 
 /*!
  @method		- (void) sendMessage:(NSDictionary *) message;
@@ -346,29 +333,6 @@ typedef NSInteger WebViewType;
 - (void) sendMessage:(NSDictionary *) message;
 
 - (void) sendMessageToWebLayer:(NSDictionary *) message;
-
-/*!
- @method		-(void) sendCallback:(NSString *)callbackId withData:(NSObject *)data
- @abstract		this methods sends a callback with the givent callbackId and the object as parameter of the methods which is called in JS
- @param         callbackId : the callbackID given by a former JS call, so that JS calls the appropriate method
- @param         object : the object to send to the JS method which corresponds to the callbackId given
- @discussion    This method should NOT be overridden in subclasses.
- */
-- (void)sendCallback:(NSString *)callback withData:(NSObject *)data;
-
-- (void)sendCallbackToWebLayer:(NSString *)callback withData:(NSObject *)data;
-
-/*!
- @method		- (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback
- @abstract		this method sends an event with a data object and an optional callback
- @param         event: event fired
- @param         data: data object to send to JS
- @param         callback: the callback JS should calls when message is treated
- @discussion    This method should NOT be overridden in subclasses.
- */
-- (void)sendEvent:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
-
-- (void)sendEventToWebLayer:(NSString *)event withData:(NSObject *)data andCallback:(NSString *)callback;
 
 /*!
  @method        - (BOOL)handleDictionarySentByJavaScript:(NSDictionary *)message

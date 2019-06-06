@@ -36,83 +36,59 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-#pragma mark SINGLETON
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-static CobaltPluginManager *cobaltPluginManagerInstance = nil;
-
-+ (CobaltPluginManager *)sharedInstance {
-	@synchronized(self) {
-		if (cobaltPluginManagerInstance == nil) {
-			cobaltPluginManagerInstance = [[self alloc] init];
-		}
-	}
-    
-	return cobaltPluginManagerInstance;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma mark INITIALISATION
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (id)init{
-	if (self = [super init]) {
-        _pluginsDictionary = [CobaltPluginManager pluginsConfiguration];
-        //_pluginsDictionary = [[NSMutableDictionary alloc] initWithContentsOfFile: [[NSBundle mainBundle] pathForResource:@"plugins" ofType:@"plist"]];
-    }
-    
-	return self;
-}
-
-- (BOOL)onMessageFromWebView:(WebViewType)webView
-    fromCobaltViewController:(CobaltViewController *)viewController
-                     andData:(NSDictionary *)data {
-    NSString *pluginName = [data objectForKey:kJSPluginName];
-    
-    if ([pluginName isKindOfClass:[NSString class]]) {
-        NSString *className = [[_pluginsDictionary objectForKey:pluginName] objectForKey:kConfigurationIOS];
-        Class class = NSClassFromString(className);
-        if(class) {
-            CobaltAbstractPlugin *plugin = [class sharedInstanceWithCobaltViewController:viewController];
-            switch (webView) {
-                case WEB_VIEW:
-                    [plugin onMessageFromCobaltController:viewController
-                                                  andData:data];
-                    break;
-                case WEB_LAYER:
-                    [plugin onMessageFromWebLayerWithCobaltController:viewController
-                                                              andData:data];
-                    break;
-            }
-            
-            return YES;
-        }
++ (BOOL)onMessage:(nonnull NSDictionary *)message
+      fromWebView:(WebViewType)webView
+inCobaltController:(nonnull CobaltViewController *)viewController
+{
+    NSDictionary *classes = [message objectForKey:kJSPluginClasses];
+    if (! classes)
+    {
 #if DEBUG_COBALT
-        else {
-            NSLog(@"\n***********\n%@ class not found\n***********\n", className);
-        }
+        NSLog(@"CobaltPluginManager - onMessage:fromWebView:inCobaltController: classes not found or not an object.\n%@", message.description);
 #endif
+        return NO;
+    }
+    NSString *className = [classes objectForKey:kConfigurationIOS];
+    if (! className)
+    {
+#if DEBUG_COBALT
+        NSLog(@"CobaltPluginManager - onMessage:fromWebView:inCobaltController: classes.ios not found or not a string.\n%@", message.description);
+#endif
+        return NO;
+    }
+    Class class = NSClassFromString(className);
+    if (! class
+        || ! [class isSubclassOfClass:[CobaltAbstractPlugin class]])
+    {
+#if DEBUG_COBALT
+        NSLog(@"CobaltPluginManager - onMessage:fromWebView:inCobaltController: class %@ not found or not inheriting from CobaltAbstractPlugin.", className);
+#endif
+        return NO;
     }
     
-    return NO;
-}
-
-+ (NSDictionary *)pluginsConfiguration {
-    NSDictionary *cobaltConfiguration = [Cobalt cobaltConfiguration];
-    if (cobaltConfiguration == nil) {
-        return nil;
+    NSString *action = [message objectForKey:kJSAction];
+    if (! action)
+    {
+#if DEBUG_COBALT
+        NSLog(@"CobaltPluginManager - onMessage:fromWebView:inCobaltController: action not found or not a string.\n%@", message.description);
+#endif
+        return NO;
     }
+    NSDictionary *data = [message objectForKey:kJSData];
+    NSString *callbackChannel = [message objectForKey:kJSCallbackChannel];
     
-    id pluginsConfiguration = [cobaltConfiguration objectForKey:kConfigurationPlugins];
-    if (pluginsConfiguration == nil
-        || ! [pluginsConfiguration isKindOfClass:[NSDictionary class]]) {
-        return nil;
-    }
+    CobaltAbstractPlugin *plugin = [class sharedInstance];
+    [plugin onMessageFromWebView:webView
+              inCobaltController:viewController
+                      withAction:action
+                            data:data
+              andCallbackChannel:callbackChannel];
     
-    return pluginsConfiguration;
+    return YES;
 }
 
 @end

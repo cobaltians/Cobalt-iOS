@@ -29,6 +29,8 @@
 
 #import "Cobalt.h"
 
+#import "PubSub.h"
+
 //static NSMutableDictionary *sCobaltConfiguration;
 static NSDictionary *sCobaltConfiguration;
 static NSString *sResourcePath;
@@ -122,11 +124,19 @@ static NSString *sResourcePath;
     int infiniteScrollOffset = [configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] != nil ? [[configuration objectForKey:kConfigurationControllerInfiniteScrollOffset] intValue] : 0;
     NSDictionary *barsDictionary = [configuration objectForKey:kConfigurationBars];
     
-    if (className == nil) {
-#if DEBUG_COBALT
-        NSLog(@"cobaltViewControllerForController:andPage: no class found for %@ controller", controller);
-#endif
-        return nil;
+    if (className == nil)
+    {
+        CobaltViewController *viewController = [[CobaltViewController alloc] initWithNibName:NIB_DEFAULT
+                                                                                      bundle:cobaltBundle];
+        viewController.pageName = page;
+        viewController.background = background;
+        viewController.scrollsToTop = scrollsToTop;
+        viewController.isPullToRefreshEnabled = pullToRefreshEnabled;
+        viewController.isInfiniteScrollEnabled = infiniteScrollEnabled;
+        viewController.infiniteScrollOffset = infiniteScrollOffset;
+        viewController.barsConfiguration = barsDictionary;
+        
+        return viewController;
     }
     
     Class class = [Cobalt cobaltViewControllerClassWithName:className];
@@ -362,13 +372,64 @@ static NSString *sResourcePath;
     
     NSData *data = [Cobalt dataWithContentsOfFile:[NSString stringWithFormat:@"%@%@",
                                                    cobaltResourcePath,
-                                                   @"cobalt.conf"]];
+                                                   @"cobalt.json"]];
     if (data == nil) {
         return nil;
     }
     
     sCobaltConfiguration = [Cobalt dictionaryWithData:data];
     return (NSMutableDictionary *) CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault, (CFDictionaryRef) sCobaltConfiguration, kCFPropertyListMutableContainersAndLeaves));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark APP LIFECYCLE
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
++ (void)onAppStarted
+{
+    [[PubSub sharedInstance] publishMessage:nil
+                                  toChannel:JSEventOnAppStarted];
+}
+
++ (void)onAppForeground
+{
+    [[PubSub sharedInstance] publishMessage:nil
+                                  toChannel:JSEventOnAppForeground];
+}
+
++ (void)onAppBackground
+{
+    [[PubSub sharedInstance] publishMessage:nil
+                                  toChannel:JSEventOnAppBackground];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma mark PUBSUB SHORTCUTS
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
++ (void)subscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                toChannel:(nonnull NSString *)channel
+{
+    [[PubSub sharedInstance] subscribeDelegate:delegate
+                                     toChannel:channel];
+}
+
++ (void)unsubscribeDelegate:(nonnull id<PubSubDelegate>)delegate
+                fromChannel:(nonnull NSString *)channel
+{
+    [[PubSub sharedInstance] unsubscribeDelegate:delegate
+                                     fromChannel:channel];
+}
+
++ (void)publishMessage:(nullable NSDictionary *)message
+             toChannel:(nonnull NSString *)channel
+{
+    [[PubSub sharedInstance] publishMessage:message
+                                  toChannel:channel];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
